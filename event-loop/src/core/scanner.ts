@@ -11,13 +11,11 @@ class FsStatScannerImpl implements FsStatScanner {
     let count = 0;
 
     while (toVisit.length > 0) {
-      const currentPath = toVisit.pop()!;
-      const subdirectories = await this.getSubdirectories(currentPath);
+      const subdirectories = await Promise.all(
+        toVisit.map((currentPath) => this.getSubdirectories(currentPath)),
+      ).then((res) => res.flat());
       count += subdirectories.length;
-      toVisit = [
-        ...toVisit,
-        ...subdirectories.map((subdir) => `${currentPath}/${subdir}`),
-      ];
+      toVisit = [...subdirectories];
     }
 
     return { numOfDirs: count };
@@ -36,7 +34,7 @@ class FsStatScannerImpl implements FsStatScanner {
       });
       const directories = files
         .filter((file) => file.isDirectory())
-        .map((dir) => dir.name);
+        .map((dir) => `${path}/${dir.name}`);
       return directories;
     } catch (err) {
       if (this.isAccessError(err)) {
