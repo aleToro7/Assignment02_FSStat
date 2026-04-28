@@ -10,11 +10,18 @@
     "watch": "tsc -w",
     "clean": "rm -rf dist"
   },
-  "keywords": ["pcd", "event-loop", "fsstat"],
+  "keywords": [
+    "pcd",
+    "event-loop",
+    "fsstat"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
+  },
+  "imports": {
+    "#*": "./dist/*.js"
   }
 }
