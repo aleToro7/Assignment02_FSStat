@@ -22,7 +22,8 @@
     "typescript": "^5.0.0"
   },
   "imports": {
-    "#*": "./dist/*.js"
+    "#*": "./dist/*.js",
+    "#types": "./src/types/index.ts"
   },
   "dependencies": {
     "fs": "^0.0.1-security"
