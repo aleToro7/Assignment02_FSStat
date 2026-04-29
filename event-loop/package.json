@@ -25,7 +25,8 @@
     "#*": "./dist/*.js",
     "#types": "./src/types/index.ts"
   },
-  "dependencies": {
-    "fs": "^0.0.1-security"
+  "exports": {
+    ".": "./dist/index.js",
+    "./types": "./src/types/index.ts"
   }
 }
