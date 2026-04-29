@@ -19,7 +19,30 @@ class FsStatScannerImpl implements FsStatScanner {
   ]);
 
   async getReport(path: string, maxSize: number, bands: number): Promise<FsStatReport> {
-    throw new Error("Not implemented yet :(");
+    const report = FsStatReport(maxSize, bands);
+    await this.traverseDirectory(createPath(path), report);
+    return report;
+  }
+
+  private async traverseDirectory(path: Path, report: FsStatReport): Promise<void> {
+    if (this.isBlacklisted(path)) return;
+    try {
+      const entries = await fs.readdir(path, { withFileTypes: true });
+      for (const entry of entries) {
+        const entryPath = concatPaths(path, createPath(entry.name));
+        if (entry.isDirectory()) {
+          await this.traverseDirectory(entryPath, report);
+        } else if (entry.isFile()) {
+          const stats = await fs.stat(entryPath);
+          report.updateReport(stats.size);
+        }
+      }
+    } catch (err) {
+      if (this.isAccessError(err)) {
+        return;
+      }
+      throw this.parseScanningError(err, path);
+    }
   }
 
   async countSubdirectories(path: string): Promise<CountingDirectoryReport> {
