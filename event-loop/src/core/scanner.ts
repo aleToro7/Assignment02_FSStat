@@ -48,40 +48,38 @@ class FsStatScannerImpl implements FsStatScanner {
     report: FsStatReport,
   ): Promise<void> {
     if (this.isBlacklisted(path)) return;
-    try {
-      const exploreFile = (fileName: string) =>
-        this.traverseFile(concatPaths(path, createPath(fileName)), report);
-      const exploreDir = (dirName: string) =>
-        this.traverseDirectory(concatPaths(path, createPath(dirName)), report);
-      const entries = await fs.readdir(path, {
+    const exploreFile = (fileName: string) =>
+      this.traverseFile(concatPaths(path, createPath(fileName)), report);
+    const exploreDir = (dirName: string) =>
+      this.traverseDirectory(concatPaths(path, createPath(dirName)), report);
+    const entries = await fs
+      .readdir(path, {
         withFileTypes: true,
+      })
+      .catch((err) => {
+        this.ignoreAccessError(err, path);
+        return [];
       });
-      const directories = entries.filter((entry) => entry.isDirectory());
-      const files = entries.filter((entry) => entry.isFile());
-      await Promise.all([
-        ...files.map((file) => exploreFile(file.name)),
-        ...directories.map((dir) => exploreDir(dir.name)),
-      ]);
-    } catch (err) {
-      if (this.isAccessError(err)) {
-        return;
-      }
-      throw this.parseScanningError(err, path);
-    }
+    const directories = entries.filter((entry) => entry.isDirectory());
+    const files = entries.filter((entry) => entry.isFile());
+    await Promise.all([
+      ...files.map((file) => exploreFile(file.name)),
+      ...directories.map((dir) => exploreDir(dir.name)),
+    ]);
   }
 
   private async traverseFile(
     filePath: Path,
     report: FsStatReport,
   ): Promise<void> {
-    try {
-      const stats = await fs.stat(filePath);
-      report.updateReport(stats.size);
-    } catch (err) {
-      if (this.isAccessError(err)) {
-        return;
-      }
-      throw this.parseScanningError(err, filePath);
+    fs.stat(filePath)
+      .then((stats) => report.updateReport(stats.size))
+      .catch((err) => this.ignoreAccessError(err, filePath));
+  }
+
+  private async ignoreAccessError(err: unknown, path: Path): Promise<void> {
+    if (!this.isAccessError(err)) {
+      throw this.parseScanningError(err, path);
     }
   }
 
