@@ -2,7 +2,19 @@ import fs from "fs/promises";
 import { concatPaths, createPath, type Path } from "./path.js";
 import { FsStatReport } from "./report.js";
 
+/**
+ * FsStatScanner defines the interface for scanning a directory and generating a report on the number of files and their size distribution.
+ */
 export interface FsStatScanner {
+  /**
+   * Generates a report for the given directory path by computing statistics about:
+   * - The total number of files contained in the given path and all its subdirectories.
+   * - An array where the i-th element represents the number of files whose size falls into the i-th band.
+   * The bands are defined by dividing the range of file sizes (from 0 to maxSize) into equal intervals.
+   * @param path The path of the directory to scan.
+   * @param maxSize The maximum file size in each band.
+   * @param bands The number of size bands to divide the file sizes into.
+   */
   getReport(
     path: string,
     maxSize: number,
