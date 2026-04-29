@@ -1,28 +1,10 @@
-import type { FsStatReport } from "#types";
-import { readdir } from "fs/promises";
+import type { CountingDirectoryReport } from "#types";
+import fs from "fs/promises";
 import { concatPaths, createPath, type Path } from "./path.js";
+import { FsStatReport } from "./report.js";
 
 export interface FsStatScanner {
-  /**
-   * Counts the number of directories contained in the given path and all its subdirectories.
-   *
-   * **Note**: Any directory that cannot be accessed due to permissions issues will be silently ignored and not counted.
-   * However, if the initial path provided is inaccessible, an error will be thrown.
-   *
-   * **Note**: The following directories are blacklisted and will be ignored during the scanning process:
-   * - /proc
-   * - /sys
-   * - /dev
-   * - /run
-   * - /var/run
-   * - /Volumes
-   * - /Network
-   *
-   * @param path the path to scan
-   * @returns a report containing the number of directories contained in the given path and all its subdirectories
-   * @throws {Error} if the given path does not exist or is not a directory
-   */
-  countSubdirectories(path: string): Promise<FsStatReport>;
+  getReport(path: string, maxSize: number, bands: number): Promise<FsStatReport>;
 }
 
 class FsStatScannerImpl implements FsStatScanner {
@@ -36,7 +18,11 @@ class FsStatScannerImpl implements FsStatScanner {
     "/Network",
   ]);
 
-  async countSubdirectories(path: string): Promise<FsStatReport> {
+  async getReport(path: string, maxSize: number, bands: number): Promise<FsStatReport> {
+    throw new Error("Not implemented yet :(");
+  }
+
+  async countSubdirectories(path: string): Promise<CountingDirectoryReport> {
     let toVisit: Path[] = [createPath(path)];
     let count = 0;
     while (toVisit.length > 0) {
@@ -60,7 +46,7 @@ class FsStatScannerImpl implements FsStatScanner {
     if (this.isBlacklisted(path)) return [];
     const basePath = createPath(path);
     try {
-      const files = await readdir(basePath, {
+      const files = await fs.readdir(basePath, {
         withFileTypes: true,
       });
       const directories = files

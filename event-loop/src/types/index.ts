@@ -1,3 +1,8 @@
+export type CountingDirectoryReport = {
+  numOfDirs: number;
+};
+
 export type FsStatReport = {
-    numOfDirs: number;
-}
+  numOfFiles: number;
+  sizeBands: number[];
+};
