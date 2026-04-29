@@ -1,4 +1,3 @@
-import type { CountingDirectoryReport } from "#types";
 import fs from "fs/promises";
 import { concatPaths, createPath, type Path } from "./path.js";
 import { FsStatReport } from "./report.js";
@@ -40,45 +39,6 @@ class FsStatScannerImpl implements FsStatScanner {
     } catch (err) {
       if (this.isAccessError(err)) {
         return;
-      }
-      throw this.parseScanningError(err, path);
-    }
-  }
-
-  async countSubdirectories(path: string): Promise<CountingDirectoryReport> {
-    let toVisit: Path[] = [createPath(path)];
-    let count = 0;
-    while (toVisit.length > 0) {
-      const subdirectories = await Promise.all(
-        toVisit.map((currentPath) => this.getSubdirectories(currentPath)),
-      ).then((res) => res.flat());
-      count += subdirectories.length;
-      toVisit = [...subdirectories];
-    }
-
-    return { numOfDirs: count };
-  }
-
-  /**
-   * Given a path, it returns the number of directories contained in that path and all its subdirectories.
-   * @param path the path to scan
-   * @returns a report containing the number of directories contained in the given path and all its subdirectories
-   * @throws {Error} if the given path does not exist or is not a directory
-   */
-  private async getSubdirectories(path: string): Promise<Path[]> {
-    if (this.isBlacklisted(path)) return [];
-    const basePath = createPath(path);
-    try {
-      const files = await fs.readdir(basePath, {
-        withFileTypes: true,
-      });
-      const directories = files
-        .filter((file) => file.isDirectory())
-        .map((dir) => concatPaths(basePath, createPath(dir.name)));
-      return directories;
-    } catch (err) {
-      if (this.isAccessError(err)) {
-        return [];
       }
       throw this.parseScanningError(err, path);
     }
