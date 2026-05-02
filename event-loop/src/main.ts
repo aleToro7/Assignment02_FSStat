@@ -1,22 +1,16 @@
-interface Polite {
-  name: string;
-  greet(other: Polite): void;
-}
+import { FsStatScanner } from "#core/scanner";
+import type { FsStatReport } from "#types/index";
+import { benchmark } from "#utils/benchmark";
+import { FileSize } from "#utils/sizes";
 
-class PersonImpl implements Polite {
-  constructor(public name: string) {}
+const dirPath = process.argv[2] ?? process.cwd();
 
-  greet(other: Polite): void {
-    console.log(`Hello, ${other.name}! My name is ${this.name}.`);
-  }
-}
-
-function Person(name: string): Polite {
-  return new PersonImpl(name);
-}
-
-const astro = Person("Astro");
-const nax = Person("Nax");
-
-astro.greet(nax);
-nax.greet(astro);
+const scanner = FsStatScanner();
+const nb = 5;
+const maxFileSize = FileSize.megabyte(100);
+const { result, duration } = await benchmark(() =>
+  scanner.getReport(dirPath, maxFileSize, nb),
+);
+const report: FsStatReport = result.dto();
+console.log(`Report: ${JSON.stringify(report, null, 2)}`);
+console.log(`Time taken: ${duration.toFixed(2)} ms`);
