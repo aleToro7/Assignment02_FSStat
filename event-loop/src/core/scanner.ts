@@ -72,12 +72,12 @@ class FsStatScannerImpl implements FsStatScanner {
     filePath: Path,
     report: FsStatReport,
   ): Promise<void> {
-    fs.stat(filePath)
+    await fs.stat(filePath)
       .then((stats) => report.updateReport(stats.size))
       .catch((err) => this.ignoreAccessError(err, filePath));
   }
 
-  private async ignoreAccessError(err: unknown, path: Path): Promise<void> {
+  private ignoreAccessError(err: unknown, path: Path): void {
     if (!this.isAccessError(err)) {
       throw this.parseScanningError(err, path);
     }
