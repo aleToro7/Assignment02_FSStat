@@ -3,7 +3,7 @@ import type { FsStatReport } from "#types/index";
 import { benchmark } from "#utils/benchmark";
 import { FileSize } from "#utils/sizes";
 
-const dirPath = process.argv[2] ?? "/home/diottanax/";
+const dirPath = process.argv[2] ?? process.cwd();
 
 const scanner = FsStatScanner();
 const nb = 5;
