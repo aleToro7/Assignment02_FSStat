@@ -74,7 +74,7 @@ class FsStatReportImpl implements FsStatReport {
   dto(): FsStatReportDTO {
     return {
       numOfFiles: this.numOfFiles,
-      sizeBands: this.sizeBands,
+      sizeBands: [...this.sizeBands],
     };
   }
 }
