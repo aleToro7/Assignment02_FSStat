@@ -48,7 +48,7 @@
 \maketitle
 
 \begin{abstract}
-Il presente documento descrive la progettazione e l'implementazione della libreria \texttt{FSStatLib}, sviluppata in Java 25. L'obiettivo del 
+Il presente documento descrive la progettazione e l'implementazione della libreria \texttt{FSStatLib}, sviluppata in Java 21+. L'obiettivo del 
 progetto è analizzare un albero di directory del file system, calcolando il numero totale di file e la loro distribuzione in fasce di dimensione. 
 L'elaborazione è stata parallelizzata utilizzando tre metodi e tecnologie differenti: i Virtual Threads, 
 programmazione asincrona basata su event loop, e la programmazione reattiva con RX.
@@ -76,7 +76,7 @@ Il progetto è stato declinato in \textbf{tre versioni indipendenti}, ciascuna a
 
 \begin{enumerate}
     \item \textbf{Virtual Threads} (Java): paradigma \textit{thread-per-task} con Virtual Thread leggeri gestiti dalla JVM.
-    \item \textbf{Programmazione asincrona basata su Event Loop}: composizione di operazioni non bloccanti tramite \texttt{CompletableFuture} e callback.
+    \item \textbf{Programmazione asincrona basata su Event Loop}: composizione di operazioni non bloccanti.
     \item \textbf{Programmazione reattiva con RX}: modellazione del file system traversal come stream di eventi, elaborato tramite operatori funzionali (RxJava).
 \end{enumerate}
 
