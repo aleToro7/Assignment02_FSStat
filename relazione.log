@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.28)  28 JUN 2026 18:23
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.28)  28 JUN 2026 18:59
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -453,21 +453,31 @@ LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 2
  (/usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmtt.fd
 File: ts1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-Overfull \hbox (3.27705pt too wide) in paragraph at lines 270--271
+<./immagini/typescript_architecture.png, id=132, 6852.60126pt x 8222.72pt>
+File: ./immagini/typescript_architecture.png Graphic file (type png)
+<use ./immagini/typescript_architecture.png>
+Package pdftex.def Info: ./immagini/typescript_architecture.png  used on input line 257.
+(pdftex.def)             Requested size: 452.96826pt x 543.5293pt.
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+
+Overfull \hbox (3.27705pt too wide) in paragraph at lines 277--278
  []\T1/lmr/bx/n/10.95 Pattern di in-cap-su-la-men-to: fac-to-ry func-tion e in-ter-fac-cia pub-bli-ca.[] \T1/lmr/m/n/10.95 Sia \T1/lmtt/m/n/10.95 FsStatReport
  []
 
 [7]
-Overfull \hbox (15.35251pt too wide) in paragraph at lines 288--289
+Overfull \hbox (15.35251pt too wide) in paragraph at lines 295--296
 \T1/lmr/m/n/10.95 time il ty-pe sy-stem di Ty-pe-Script im-po-ne che so-lo path pro-dot-ti da \T1/lmtt/m/n/10.95 createPath() \T1/lmr/m/n/10.95 o \T1/lmtt/m/n/10.95 concatPaths()
  []
 
 
-Overfull \hbox (8.61095pt too wide) in paragraph at lines 292--293
+Overfull \hbox (8.61095pt too wide) in paragraph at lines 299--300
  []\T1/lmr/bx/n/10.95 Separazione del mo-del-lo in-ter-no dal-l'A-PI ester-na: il me-to-do \T1/lmtt/b/n/10.95 dto()\T1/lmr/bx/n/10.95 .[] \T1/lmtt/m/n/10.95 FsStatReportImpl
  []
 
-[8] [9] [10] (./relazione.aux)
+[8] [9] [10] [11 <./immagini/typescript_architecture.png>] (./relazione.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -476,18 +486,18 @@ Package rerunfilecheck Info: File `relazione.out' has not changed.
 (rerunfilecheck)             Checksum: 859ADEB9FD063E0AC2665866FA1465F1;2023.
  ) 
 Here is how much of TeX's memory you used:
- 12859 strings out of 467525
- 198589 string characters out of 5418982
- 856367 words of memory out of 5000000
- 41507 multiletter control sequences out of 15000+600000
+ 12869 strings out of 467525
+ 198930 string characters out of 5418982
+ 857465 words of memory out of 5000000
+ 41515 multiletter control sequences out of 15000+600000
  685590 words of font info for 74 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  75i,6n,79p,899b,1246s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr6.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtk10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt9.pfb>
-Output written on relazione.pdf (10 pages, 565111 bytes).
+Output written on relazione.pdf (11 pages, 1441818 bytes).
 PDF statistics:
- 256 PDF objects out of 1000 (max. 8388607)
- 219 compressed objects within 3 object streams
- 101 named destinations out of 1000 (max. 500000)
- 78 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 264 PDF objects out of 1000 (max. 8388607)
+ 224 compressed objects within 3 object streams
+ 103 named destinations out of 1000 (max. 500000)
+ 83 words of extra memory for PDF output out of 10000 (max. 10000000)
 

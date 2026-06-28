@@ -252,6 +252,13 @@ In \texttt{Main}, il chiamante configura i tre parametri della scansione (\textt
 
 L'implementazione con Event Loop è sviluppata in \textbf{TypeScript} sul runtime \textbf{Node.js}, ed è organizzata in moduli con responsabilità ben separate. A differenza della versione Java con Virtual Threads, l'intera concorrenza è ottenuta senza istanziare alcun thread esplicitamente: il parallelismo emerge dalla composizione di \texttt{Promise} gestite dall'event loop di Node.js e dal thread pool di \textit{libuv}.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{./immagini/typescript_architecture.png}
+    \caption{Diagramma UML delle classi dell'implementazione con Event Loop (TypeScript).}
+    \label{fig:uml-ts}
+\end{figure}
+
 \paragraph{Struttura dei moduli.}
 
 Il codebase è suddiviso in moduli distinti, ciascuno con una responsabilità unica:

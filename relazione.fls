@@ -209,6 +209,11 @@ INPUT /usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmtt.fd
 INPUT /usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmtt.fd
 INPUT /usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmtt.fd
 INPUT /usr/local/texlive/2026/texmf-dist/fonts/tfm/public/lm/ts1-lmtt10.tfm
+INPUT ./immagini/typescript_architecture.png
+INPUT ./immagini/typescript_architecture.png
+INPUT ./immagini/typescript_architecture.png
+INPUT ./immagini/typescript_architecture.png
+INPUT ./immagini/typescript_architecture.png
 INPUT relazione.aux
 INPUT ./relazione.out
 INPUT ./relazione.out
