@@ -216,7 +216,7 @@ public CompletableFuture<FSReport> getFSReport(
 
 La restituzione di una \texttt{CompletableFuture} disaccoppia il chiamante dalla concorrenza interna: la CLI può concatenare callback (\texttt{thenAccept}) oppure attendere sincronamente con \texttt{join()}, senza dover conoscere né i Virtual Thread né l'executor sottostante.
 
-Internamente, \texttt{getFSReport} avvia la computazione tramite \texttt{CompletableFuture.supplyAsync()}, che esegue il corpo su un thread del \texttt{ForkJoinPool} comune. Da questo contesto viene creato l'executor dedicato ai Virtual Thread:
+Internamente, la computazione viene incapsulata in una CompletableFuture.supplyAsync(). All'interno di questo contesto asincrono viene creato un ExecutorService dedicato ai Virtual Threads tramite Executors.newVirtualThreadPerTaskExecutor():
 
 \begin{lstlisting}[language=Java]
 try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
