@@ -199,6 +199,11 @@ INPUT /usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstlang1.sty
 INPUT /usr/local/texlive/2026/texmf-dist/fonts/tfm/public/lm/ec-lmtt9.tfm
 INPUT /usr/local/texlive/2026/texmf-dist/fonts/tfm/public/lm/ec-lmr9.tfm
 INPUT /usr/local/texlive/2026/texmf-dist/fonts/tfm/public/lm/ec-lmr6.tfm
+INPUT ./immagini/Virtual_thread_architecture.png
+INPUT ./immagini/Virtual_thread_architecture.png
+INPUT ./immagini/Virtual_thread_architecture.png
+INPUT ./immagini/Virtual_thread_architecture.png
+INPUT ./immagini/Virtual_thread_architecture.png
 INPUT /usr/local/texlive/2026/texmf-dist/fonts/tfm/public/lm/ec-lmtk10.tfm
 INPUT /usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmtt.fd
 INPUT /usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmtt.fd

@@ -160,6 +160,13 @@ Il progetto è suddiviso seguendo il principio di Separazione delle Responsabili
 
 L'implementazione con Virtual Threads è articolata in due classi principali nel package \texttt{it.unibo.fsstat.lib}: \texttt{FSReport}, che modella il risultato della computazione, e \texttt{FSStatLib}, che ne orchestra l'esecuzione concorrente. La CLI (\texttt{Main}) interagisce esclusivamente con l'interfaccia pubblica di \texttt{FSStatLib}, rimanendo ignara del paradigma di concorrenza sottostante.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.75\textwidth]{./immagini/Virtual_thread_architecture.png}
+    \caption{Diagramma UML delle classi dell'implementazione con Virtual Threads.}
+    \label{fig:uml-vt}
+\end{figure}
+
 \paragraph{Il modello dati: \texttt{FSReport}.}
 
 \texttt{FSReport} è un \textit{value object} che incapsula tre informazioni: il conteggio totale dei file (\texttt{totalFiles}), i parametri di classificazione (\texttt{maxFS} e \texttt{nb}), e un array \texttt{distribution} di dimensione \texttt{nb + 1}. Le prime \texttt{nb} celle corrispondono alle bande di dimensione nell'intervallo \texttt{[0, maxFS]}, mentre la cella di indice \texttt{nb} raccoglie i file che superano \texttt{maxFS}.
@@ -226,10 +233,5 @@ Il design reattivo stravolge l'architettura passando dalla "richiesta di dati" (
     \item \textbf{Aggiornamenti Dinamici:} La GUI si limita a effettuare una \texttt{subscribe()} sullo stream, ricevendo un nuovo snapshot del report ogniqualvolta la pipeline reattiva emette un aggiornamento.
     \item \textbf{Cancellazione:} Per fermare il task è sufficiente invocare il metodo \texttt{dispose()} (o disiscriversi dallo stream); il framework RX propaga istantaneamente e in modo automatico il segnale di interruzione alla sorgente (l'esploratore delle directory), chiudendo pulitamente le risorse aperte.
 \end{itemize}
-
-\section{Risultati e Osservazioni}
-Dai test effettuati localmente, l'overhead della creazione di migliaia di Virtual Threads è risultato impercettibile, permettendo all'applicazione di consumare una frazione della
- RAM che sarebbe stata necessaria usando un pool cached di platform threads. Il sistema è risultato stabile, senza mai incorrere 
- in \texttt{OutOfMemoryError}, confermando le tesi sulla scalabilità di questo nuovo paradigma su workload I/O-bound.
 
 \end{document}
