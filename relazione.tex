@@ -1,0 +1,91 @@
+\documentclass[11pt,a4paper]{article}
+
+% Pacchetti per lingua e formattazione
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.54cm}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{graphicx}
+
+% Configurazione per l'inserimento di codice
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+% Informazioni sul documento
+\title{\textbf{Relazione Progetto: File System Statistics (FSStat)}\\ \large Programmazione Concorrente e Distribuita}
+\author{Il tuo Nome e Cognome}
+\date{Anno Accademico 2025/2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Il presente documento descrive la progettazione e l'implementazione della libreria \texttt{FSStatLib}, sviluppata in Java 25. L'obiettivo del progetto è analizzare un albero di directory del file system, calcolando il numero totale di file e la loro distribuzione in fasce di dimensione. L'elaborazione è stata parallelizzata utilizzando in modo esclusivo i Virtual Threads (Project Loom), per garantire alta scalabilità e reattività.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduzione e Requisiti}
+Il progetto prevede la creazione di una libreria asincrona in grado di esplorare il file system a partire da una directory radice e fornire un report statistico (numero totale di file e raggruppamento in bande in base alla dimensione). 
+
+Oltre al requisito base, è stato implementato il requisito opzionale (punto di eccellenza) che prevede la possibilità di fermare la computazione in qualsiasi momento e di ricevere aggiornamenti in tempo reale sulle statistiche. 
+
+\section{Analisi del Problema e Scelte Concorrenti}
+L'attraversamento ricorsivo di un file system e l'interrogazione delle proprietà dei file sono tipiche operazioni legate all'I/O. In questi scenari, il modello di programmazione a thread fisici ("platform threads") presenta gravi limiti di scalabilità a causa dell'elevato consumo di memoria allocato per lo stack di ogni thread Virtual Threads.pdf].
+
+\subsection{Approccio Thread-Per-Task con i Virtual Threads}
+Per risolvere questo problema, è stata adottata l'API dei \textbf{Virtual Threads}. I Virtual Threads condividono caratteristiche con la memoria virtuale, in quanto sono economici e possono esistere in grande quantità, appoggiandosi su un numero ristretto di \textit{carrier threads} del sistema operativo Virtual Threads.pdf].
+
+La libreria utilizza il pattern \textit{Thread-per-task} Virtual Threads.pdf]: per ogni sotto-directory incontrata durante l'esplorazione, viene sottomesso un nuovo task a un \texttt{VirtualThreadPerTaskExecutor} dedicato. Quando un thread esegue un'operazione bloccante (ad esempio la lettura del contenuto della cartella o la \texttt{sleep()} per rallentare l'interfaccia), esso effettua automaticamente l'\textit{unmounting} dal carrier thread, rilasciandolo per elaborare altri Virtual Threads e garantendo così un throughput altissimo Virtual Threads.pdf].
+
+\subsection{Evitare il problema dei Pinned Threads}
+L'implementazione dell'aggiornamento in tempo reale sulla GUI richiede che tutti i task condividano lo stesso oggetto \texttt{FSReport}. 
+Tuttavia, l'uso di blocchi \texttt{synchronized} o metodi nativi in Java comporta il blocco sia del Virtual Thread sia del thread di piattaforma ad esso associato (fenomeno noto come \textit{Pinned Thread}), annullando i benefici di scalabilità Virtual Threads.pdf].
+
+Per ovviare a questo problema, i monitor per lo stato condiviso sono stati implementati usando la classe \texttt{ReentrantLock} Virtual Threads.pdf], la quale è stata nativamente adattata nel JDK per supportare il corretto \textit{unmounting} dei Virtual Threads.
+
+\section{Architettura e Design}
+Il progetto è suddiviso seguendo il principio di Separazione delle Responsabilità (Separation of Concerns). I package principali sono tre:
+
+\begin{itemize}
+    \item \textbf{\texttt{it.unibo.fsstat.lib}}: Contiene il dominio e la logica concorrente. Non ha dipendenze da componenti grafiche o di I/O su console.
+    \item \textbf{\texttt{it.unibo.fsstat.cli}}: Contiene un programma a riga di comando minimale (metodo \texttt{main} standard).
+    \item \textbf{\texttt{it.unibo.fsstat.gui}}: Implementa un'interfaccia grafica in Java Swing che permette all'utente di selezionare la directory, far partire il task, interromperlo in modo pulito e visualizzare le statistiche man mano che si aggiornano.
+\end{itemize}
+
+\subsection{Meccanismo di Cancellazione}
+La possibilità di interrompere dinamicamente il thread è stata gestita introducendo un oggetto \texttt{TaskController} condiviso con flag volatili. Durante l'iterazione sulle cartelle, i thread controllano periodicamente questo stato; se viene rilevata la richiesta di arresto, il ciclo si interrompe e propaga la cancellazione ai \texttt{Future} dei \textit{sub-tasks}.
+
+\section{Risultati e Osservazioni}
+Dai test effettuati localmente, l'overhead della creazione di migliaia di Virtual Threads è risultato impercettibile, permettendo all'applicazione di consumare una frazione della RAM che sarebbe stata necessaria usando un pool cached di platform threads Virtual Threads.pdf]. Il sistema è risultato stabile, senza mai incorrere in \texttt{OutOfMemoryError}, confermando le tesi sulla scalabilità di questo nuovo paradigma su workload I/O-bound.
+
+\end{document}

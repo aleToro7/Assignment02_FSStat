@@ -1,0 +1,9 @@
+\babel@toc {italian}{}\relax 
+\babel@toc {italian}{}\relax 
+\contentsline {section}{\numberline {1}Introduzione e Requisiti}{2}{section.1}%
+\contentsline {section}{\numberline {2}Analisi del Problema e Scelte Concorrenti}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Approccio Thread-Per-Task con i Virtual Threads}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Evitare il problema dei Pinned Threads}{2}{subsection.2.2}%
+\contentsline {section}{\numberline {3}Architettura e Design}{2}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Meccanismo di Cancellazione}{3}{subsection.3.1}%
+\contentsline {section}{\numberline {4}Risultati e Osservazioni}{3}{section.4}%
