@@ -97,7 +97,7 @@ L'attraversamento ricorsivo di un file system e l'interrogazione delle propriet�
 
 \subsection{Approccio con i Virtual Threads}
 
-I Virtual Threads, introdotti stabilmente in Java 21 (JEP 444), sono thread \textit{user-mode} gestiti dalla JVM anziché dal sistema operativo. Rispetto ai \textit{platform thread}, il loro overhead di creazione e il consumo di memoria sono trascurabili, il che li rende adatti a un modello \textit{Thread-per-task}: è possibile istanziarne decine di migliaia senza incorrere in \texttt{OutOfMemoryError} né in degrado delle prestazioni.
+I Virtual Threads, introdotti stabilmente in Java 21, sono thread \textit{user-mode} gestiti dalla JVM anziché dal sistema operativo. Rispetto ai \textit{platform thread}, il loro overhead di creazione e il consumo di memoria sono trascurabili, il che li rende adatti a un modello \textit{Thread-per-task}: è possibile istanziarne decine di migliaia senza incorrere in \texttt{OutOfMemoryError} né in degrado delle prestazioni.
 
 Questa caratteristica si adatta in modo naturale all'attraversamento ricorsivo di un albero di directory: la struttura del file system è intrinsecamente ramificata e imprevedibile, e ogni nodo (directory) richiede operazioni di I/O bloccanti a latenza variabile (apertura dello stream, lettura degli attributi dei file con \texttt{Files.size()}). Assegnare un Virtual Thread a ciascun nodo permette di sfruttare appieno la concorrenza senza dover dimensionare a priori un pool.
 
@@ -146,9 +146,33 @@ disponibile — la JVM effettua automaticamente l'\textit{unmount} del Virtual T
  context switch a livello di sistema operativo.
 
 \subsection{Approccio Asincrono basato su Event Loop}
-Il secondo paradigma adottato si basa sull'Event Loop (tipico di ecosistemi come Node.js o framework Java come Vert.x). In questo modello, un numero limitato di thread (spesso coincidente con il numero di core della CPU) esegue un ciclo continuo di dispacciamento degli eventi.
-Per non bloccare mai il thread dell'Event Loop, l'esplorazione del file system viene effettuata tramite API non bloccanti (NIO.2) e l'esecuzione prosegue tramite \textit{callback} o concatenazione di \texttt{CompletableFuture}. Il carico di lavoro viene quindi frammentato in piccoli task asincroni che si risvegliano solo quando il dato (es. la dimensione del file) è pronto dal disco, garantendo alta concorrenza senza il sovraccarico del context switch tra migliaia di thread fisici.
 
+Il secondo paradigma adottato si basa sul modello \textit{Event Loop}, incarnato in questa implementazione dal runtime \textbf{Node.js} (scritto in TypeScript). In questo modello, un \textbf{singolo thread JavaScript} esegue il codice applicativo, delegando tutte le operazioni di I/O al layer sottostante \textit{libuv}, che le gestisce tramite un proprio thread pool interno al runtime. Al completamento di ciascuna operazione, la relativa callback viene accodata nell'event loop ed eseguita dal thread principale non appena questo è libero.
+
+\paragraph{Adattamento al problema.}
+
+L'attraversamento ricorsivo di un albero di directory è un workload \textit{I/O-bound} con un elevato grado di parallelismo naturale: i contenuti di directory diverse sono indipendenti tra loro e possono essere letti concorrentemente. Questo si adatta perfettamente al modello event loop, dove la concorrenza non è ottenuta tramite thread multipli ma tramite l'\textit{interleaving} di operazioni asincrone: il thread principale non attende mai il completamento di una lettura su disco, ma registra una \texttt{Promise} e prosegue a processare altri eventi già completati.
+
+\paragraph{Concorrenza tramite \texttt{Promise.all}.}
+
+Il cuore della concorrenza risiede nel metodo \texttt{traverseDirectory} di \texttt{FsStatScannerImpl}. Dopo aver letto il contenuto di una directory tramite l'API non bloccante \texttt{fs.readdir()} (da \texttt{fs/promises}), il metodo separa i risultati in file e sottodirectory, quindi lancia \textit{simultaneamente} tutte le operazioni figlie tramite \texttt{Promise.all}:
+
+\begin{lstlisting}[language=Java]
+await Promise.all([
+  ...files.map((file) => exploreFile(file.name)),
+  ...directories.map((dir) => exploreDir(dir.name)),
+]);
+\end{lstlisting}
+
+Questo produce un \textit{fan-out} parallelo: tutte le chiamate a \texttt{fs.stat()} sui file e tutte le esplorazioni ricorsive delle sottodirectory vengono avviate in parallelo, senza attendere che una termini prima di avviare la successiva. La ricorsione si propaga in profondità nell'albero mantenendo questo stesso pattern ad ogni livello.
+
+\paragraph{Assenza di sincronizzazione per costruzione.}
+
+Una proprietà fondamentale di questo approccio è che l'aggiornamento dello stato condiviso — il metodo \texttt{updateReport(fileSize)} su \texttt{FsStatReportImpl} — avviene \textbf{senza alcun meccanismo di sincronizzazione} (niente lock, niente mutex, niente operazioni atomiche). Questo è sicuro per costruzione grazie alla \textit{run-to-completion semantics} di JavaScript: l'event loop garantisce che ogni callback venga eseguita interamente prima che un'altra possa iniziare. Due invocazioni di \texttt{updateReport} non possono mai sovrapporsi temporalmente, rendendo strutturalmente impossibile qualsiasi race condition sullo stato del report.
+
+\paragraph{Gestione degli errori e robustezza.}
+
+L'implementazione distingue due categorie di errori di I/O. Gli errori di accesso (\texttt{EACCES}, \texttt{EPERM}) vengono silenziosamente ignorati tramite \texttt{.catch()}, permettendo alla scansione di proseguire sui nodi raggiungibili. Gli errori strutturali (\texttt{ENOENT}, \texttt{ENOTDIR}) vengono invece convertiti in eccezioni tipizzate e propagati al chiamante, causando il rigetto della \texttt{Promise} restituita da \texttt{getReport}. È inoltre presente una \textit{blacklist} di path di sistema (\texttt{/proc}, \texttt{/sys}, \texttt{/dev} e altri) che vengono esclusi preventivamente dalla scansione per evitare loop infiniti o comportamenti non deterministici su filesystem virtuali.
 \subsection{Approccio Reattivo con RX}
 La terza tecnologia utilizza la Programmazione Reattiva (es. RxJava), un paradigma orientato ai flussi di dati (Data Streams) e alla propagazione dei cambiamenti. 
 L'attraversamento del file system è stato modellato come uno stream asincrono di eventi (file trovati o directory aperte) emessi da un \textit{Publisher} / \textit{Observable}. L'approccio reattivo ha permesso di operare in modo puramente dichiarativo: attraverso operatori funzionali (\texttt{map}, \texttt{flatMap}, \texttt{filter}, \texttt{scan}) gli eventi vengono trasformati e aggregati al volo per costruire il report. Questo approccio è intrinsecamente non bloccante e facilita enormemente la gestione degli aggiornamenti in tempo reale per la GUI.
@@ -225,8 +249,103 @@ Gli errori di accesso al file system (directory protette, symlink non risolvibil
 
 In \texttt{Main}, il chiamante configura i tre parametri della scansione (\texttt{directoryPath}, \texttt{maxFS}, \texttt{nb}) e concatena alla \texttt{CompletableFuture} una callback \texttt{thenAccept} per la stampa del report. La chiamata \texttt{.join()} finale blocca il thread principale fino al completamento, evitando che il programma termini prima che la computazione asincrona sia conclusa. La formattazione del report calcola le etichette delle bande moltiplicando l'indice per \texttt{bandSize = maxFS / nb}, producendo intervalli del tipo \texttt{[i·bandSize, (i+1)·bandSize]}.
 \subsection{Design dell'implementazione Event Loop}
-L'architettura in questo caso sfrutta pesantemente le chiusure (closures) e il concatenamento asincrono. L'esplorazione utilizza metodi ricorsivi che restituiscono \texttt{CompletableFuture}, elaborati su un pool ristretto (\texttt{ForkJoinPool.commonPool} o un executor custom). A differenza dei Virtual Threads, lo stato condiviso per il report può essere gestito spesso senza lock pesanti, incapsulando gli aggiornamenti direttamente nei thread del loop o riducendo i risultati alla fine della catena (\textit{Map-Reduce} puramente funzionale). Il meccanismo di stop si basa sull'interruzione della propagazione delle callback.
 
+L'implementazione con Event Loop è sviluppata in \textbf{TypeScript} sul runtime \textbf{Node.js}, ed è organizzata in moduli con responsabilità ben separate. A differenza della versione Java con Virtual Threads, l'intera concorrenza è ottenuta senza istanziare alcun thread esplicitamente: il parallelismo emerge dalla composizione di \texttt{Promise} gestite dall'event loop di Node.js e dal thread pool di \textit{libuv}.
+
+\paragraph{Struttura dei moduli.}
+
+Il codebase è suddiviso in moduli distinti, ciascuno con una responsabilità unica:
+
+\begin{itemize}
+    \item \texttt{report.ts} — modella il report statistico e la sua logica di aggiornamento;
+    \item \texttt{scanner.ts} — implementa la logica di traversal asincrono del file system;
+    \item \texttt{path.ts} — fornisce un tipo validato per i percorsi del file system;
+    \item \texttt{sizes.ts} — utility per la conversione delle unità di dimensione dei file;
+    \item \texttt{benchmark.ts} — utility per la misurazione dei tempi di esecuzione;
+    \item \texttt{index.ts} — façade pubblica della libreria verso i consumer esterni.
+\end{itemize}
+
+\paragraph{Pattern di incapsulamento: factory function e interfaccia pubblica.}
+
+Sia \texttt{FsStatReport} che \texttt{FsStatScanner} adottano un pattern idiomatico TypeScript per l'information hiding: la classe concreta (\texttt{FsStatReportImpl}, \texttt{FsStatScannerImpl}) è dichiarata \texttt{class} privata al modulo e non viene mai esportata. L'unico punto di accesso è la \textit{factory function} omonima, che restituisce l'interfaccia pubblica:
+
+\begin{lstlisting}[language=Java]
+export function FsStatScanner(): FsStatScanner {
+  return new FsStatScannerImpl();
+}
+\end{lstlisting}
+
+Il consumer non conosce mai la classe concreta né può accedere ai suoi membri privati: interagisce esclusivamente tramite l'interfaccia, che espone solo i metodi necessari (\texttt{getReport}, \texttt{updateReport}, \texttt{dto}). Questo garantisce un disaccoppiamento totale tra interfaccia e implementazione.
+
+\paragraph{Il Branded Type \texttt{Path}.}
+
+Il modulo \texttt{path.ts} definisce un \textit{Branded Type} per i percorsi del file system:
+
+\begin{lstlisting}[language=Java]
+export type Path = string & { readonly __brand: unique symbol };
+\end{lstlisting}
+
+Si tratta di un \textit{phantom type}: a runtime \texttt{Path} è semplicemente una stringa, ma a compile-time il type system di TypeScript impone che solo path prodotti da \texttt{createPath()} o \texttt{concatPaths()} — che normalizzano e validano l'input — possano essere passati alle funzioni interne dello scanner. Qualsiasi stringa grezza produce un errore di tipo a compile-time, eliminando un'intera categoria di bug senza alcun overhead a runtime.
+
+\paragraph{Separazione del modello interno dall'API esterna: il metodo \texttt{dto()}.}
+
+\texttt{FsStatReportImpl} mantiene internamente uno stato mutabile (\texttt{\_numOfFiles}, \texttt{\_sizeBands}), aggiornato ad ogni chiamata di \texttt{updateReport()}. Tuttavia, il consumer esterno non riceve mai accesso diretto a questo stato: il metodo \texttt{dto()} produce uno snapshot immutabile nel formato \texttt{FsStatReportDTO}, definito come tipo separato nel package dei tipi condivisi:
+
+\begin{lstlisting}[language=Java]
+dto(): FsStatReportDTO {
+  return {
+    numOfFiles: this.numOfFiles,
+    sizeBands: [...this.sizeBands],  // copia difensiva
+  };
+}
+\end{lstlisting}
+
+La copia difensiva dell'array (\texttt{[...this.sizeBands]}) garantisce che il DTO sia uno snapshot indipendente: eventuali aggiornamenti successivi al report non alterano il risultato già consegnato al consumer.
+
+\paragraph{Il flusso di traversal: \texttt{FsStatScannerImpl}.}
+
+Il metodo pubblico \texttt{getReport()} istanzia un \texttt{FsStatReport} vuoto e avvia la traversal ricorsiva tramite \texttt{traverseDirectory()}, restituendo la \texttt{Promise} che si risolve al termine dell'intera scansione.
+
+Il metodo \texttt{traverseDirectory()} costituisce il nucleo del design asincrono. Il suo flusso segue tre fasi:
+
+\begin{enumerate}
+    \item \textbf{Guard sulla blacklist}: prima di qualsiasi operazione I/O, il path viene verificato contro un \texttt{Set} di percorsi di sistema esclusi (\texttt{/proc}, \texttt{/sys}, \texttt{/dev}, \texttt{/run} e altri). Se il path è nella blacklist, la funzione ritorna immediatamente senza effettuare alcuna lettura, prevenendo loop infiniti o comportamenti non deterministici su filesystem virtuali.
+
+    \item \textbf{Lettura della directory}: \texttt{fs.readdir()} con l'opzione \texttt{withFileTypes: true} restituisce direttamente le informazioni sul tipo di ciascuna voce (file o directory), evitando una chiamata aggiuntiva a \texttt{fs.stat()} per discriminarle. In caso di errore di accesso (\texttt{EACCES}/\texttt{EPERM}), il \texttt{.catch()} restituisce un array vuoto, permettendo alla scansione di proseguire sui nodi accessibili.
+
+    \item \textbf{Fan-out parallelo con \texttt{Promise.all}}: file e sottodirectory vengono processati simultaneamente in un'unica barriera di sincronizzazione:
+\begin{lstlisting}[language=Java]
+await Promise.all([
+  ...files.map((file) => exploreFile(file.name)),
+  ...directories.map((dir) => exploreDir(dir.name)),
+]);
+\end{lstlisting}
+    Tutte le chiamate a \texttt{fs.stat()} sui file e tutte le esplorazioni ricorsive delle sottodirectory vengono avviate in parallelo. L'event loop gestisce il completamento di ciascuna operazione in modo indipendente: non appena \texttt{fs.stat()} completa per un file, la relativa callback aggiorna il report senza attendere gli altri. \texttt{Promise.all} funge da barriera: \texttt{traverseDirectory} si risolve solo quando \textit{tutte} le operazioni figlie sono terminate.
+\end{enumerate}
+
+\paragraph{Gestione degli errori a due livelli.}
+
+L'implementazione distingue esplicitamente due categorie di errori tramite il metodo \texttt{ignoreAccessError()}:
+
+\begin{itemize}
+    \item \textbf{Errori di permesso} (\texttt{EACCES}, \texttt{EPERM}): vengono silenziosamente ignorati. La scansione prosegue sui path accessibili, poiché è normale che alcune directory di sistema siano protette.
+    \item \textbf{Errori strutturali} (\texttt{ENOENT}, \texttt{ENOTDIR}): vengono convertiti in eccezioni tipizzate tramite \texttt{parseScanningError()} e propagati al consumer come rigetto della \texttt{Promise} restituita da \texttt{getReport()}, segnalando una condizione anomala che richiede attenzione.
+\end{itemize}
+
+\paragraph{La façade pubblica: \texttt{index.ts}.}
+
+Il modulo \texttt{index.ts} funge da unico punto di accesso alla libreria per i consumer esterni. Crea internamente un'unica istanza di \texttt{FsStatScanner} ed espone \texttt{getFSReport} come funzione standalone tramite \texttt{bind}, nascondendo completamente l'esistenza della classe:
+
+\begin{lstlisting}[language=Java]
+const scanner = FsStatScanner();
+const getFSReport = scanner.getReport.bind(scanner);
+\end{lstlisting}
+
+Il consumer può importare \texttt{getFSReport} direttamente come funzione, senza mai istanziare né conoscere \texttt{FsStatScanner}. Questa scelta rispecchia lo stile funzionale prevalente nell'ecosistema Node.js, dove si preferisce esporre funzioni piuttosto che oggetti con stato esplicito.
+
+\paragraph{CLI e misurazione delle prestazioni.}
+
+Il modulo \texttt{main.ts} implementa la CLI: legge il path da \texttt{process.argv[2]} con fallback alla directory corrente (\texttt{process.cwd()}), configura i parametri (\texttt{maxSize = 100 MB}, \texttt{nb = 5}) tramite l'utility \texttt{FileSize.megabyte()}, e misura il tempo di esecuzione con \texttt{benchmark()}. Quest'ultima funzione, basata su \texttt{process.hrtime.bigint()} per precisione al nanosecondo, restituisce sia il risultato che la durata in millisecondi, che vengono poi stampati in formato JSON indentato tramite \texttt{JSON.stringify(report, null, 2)}.
 \subsection{Design dell'implementazione RX}
 Il design reattivo stravolge l'architettura passando dalla "richiesta di dati" (pull) alla "reazione agli eventi" (push). La libreria espone un \texttt{Flowable<FSReport>} o \texttt{Observable<FSReport>}. 
 \begin{itemize}

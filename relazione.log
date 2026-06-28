@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.28)  28 JUN 2026 17:46
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.28)  28 JUN 2026 18:23
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -413,39 +413,61 @@ Overfull \hbox (118.78624pt too wide) in paragraph at lines 106--107
 (/usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2025/11/14 1.11b listings language file
 ) [3]
-Overfull \hbox (66.72946pt too wide) in paragraph at lines 161--162
+LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10.95> not available
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 158.
+
+Overfull \hbox (46.88205pt too wide) in paragraph at lines 158--159
+ []\T1/lmr/bx/n/10.95 Concorrenza tra-mi-te \T1/lmtt/b/n/10.95 Promise.all\T1/lmr/bx/n/10.95 .[] \T1/lmr/m/n/10.95 Il cuo-re del-la con-cor-ren-za ri-sie-de nel me-to-do \T1/lmtt/m/n/10.95 traverseDirectory
+ []
+
+[4]
+Overfull \hbox (66.72946pt too wide) in paragraph at lines 185--186
 \T1/lmr/m/n/10.95 L'implementazione con Vir-tual Th-reads è ar-ti-co-la-ta in due clas-si prin-ci-pa-li nel pac-ka-ge \T1/lmtt/m/n/10.95 it.unibo.fsstat.lib\T1/lmr/m/n/10.95 :
  []
 
-<./immagini/Virtual_thread_architecture.png, id=89, 4017.0075pt x 4135.45pt>
+<./immagini/Virtual_thread_architecture.png, id=103, 4017.0075pt x 4135.45pt>
 File: ./immagini/Virtual_thread_architecture.png Graphic file (type png)
 <use ./immagini/Virtual_thread_architecture.png>
-Package pdftex.def Info: ./immagini/Virtual_thread_architecture.png  used on input line 165.
+Package pdftex.def Info: ./immagini/Virtual_thread_architecture.png  used on input line 189.
 (pdftex.def)             Requested size: 339.7262pt x 349.7102pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10.95> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 172.
-[4]
-Overfull \hbox (29.24861pt too wide) in paragraph at lines 182--183
+
+Overfull \hbox (29.24861pt too wide) in paragraph at lines 206--207
 []\T1/lmr/m/n/10.95 Il me-to-do \T1/lmtt/m/n/10.95 merge(FSReport other) \T1/lmr/m/n/10.95 som-ma com-po-nen-te per com-po-nen-te i due ar-ray \T1/lmtt/m/n/10.95 distribution
  []
 
-
-Overfull \hbox (24.78217pt too wide) in paragraph at lines 195--196
+[5]
+Overfull \hbox (24.78217pt too wide) in paragraph at lines 219--220
 []\T1/lmr/m/n/10.95 Internamente, \T1/lmtt/m/n/10.95 getFSReport \T1/lmr/m/n/10.95 av-via la com-pu-ta-zio-ne tra-mi-te \T1/lmtt/m/n/10.95 CompletableFuture.supplyAsync()\T1/lmr/m/n/10.95 ,
  []
 
-[5 <./immagini/Virtual_thread_architecture.png>]
-Overfull \hbox (28.76453pt too wide) in paragraph at lines 211--212
+
+Overfull \hbox (28.76453pt too wide) in paragraph at lines 235--236
 []\T1/lmr/bx/n/10.95 Scansione lo-ca-le\T1/lmr/m/n/10.95 : si ite-ra sul con-te-nu-to del-la di-rec-to-ry tra-mi-te \T1/lmtt/m/n/10.95 Files.newDirectoryStream()\T1/lmr/m/n/10.95 .
  []
 
-LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 226.
-(/usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmtt.fd
+[6 <./immagini/Virtual_thread_architecture.png>]
+LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 250.
+ (/usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmtt.fd
 File: ts1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [6] [7] (./relazione.aux)
+)
+Overfull \hbox (3.27705pt too wide) in paragraph at lines 270--271
+ []\T1/lmr/bx/n/10.95 Pattern di in-cap-su-la-men-to: fac-to-ry func-tion e in-ter-fac-cia pub-bli-ca.[] \T1/lmr/m/n/10.95 Sia \T1/lmtt/m/n/10.95 FsStatReport
+ []
+
+[7]
+Overfull \hbox (15.35251pt too wide) in paragraph at lines 288--289
+\T1/lmr/m/n/10.95 time il ty-pe sy-stem di Ty-pe-Script im-po-ne che so-lo path pro-dot-ti da \T1/lmtt/m/n/10.95 createPath() \T1/lmr/m/n/10.95 o \T1/lmtt/m/n/10.95 concatPaths()
+ []
+
+
+Overfull \hbox (8.61095pt too wide) in paragraph at lines 292--293
+ []\T1/lmr/bx/n/10.95 Separazione del mo-del-lo in-ter-no dal-l'A-PI ester-na: il me-to-do \T1/lmtt/b/n/10.95 dto()\T1/lmr/bx/n/10.95 .[] \T1/lmtt/m/n/10.95 FsStatReportImpl
+ []
+
+[8] [9] [10] (./relazione.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -454,18 +476,18 @@ Package rerunfilecheck Info: File `relazione.out' has not changed.
 (rerunfilecheck)             Checksum: 859ADEB9FD063E0AC2665866FA1465F1;2023.
  ) 
 Here is how much of TeX's memory you used:
- 12787 strings out of 467525
- 197710 string characters out of 5418982
- 852373 words of memory out of 5000000
- 41479 multiletter control sequences out of 15000+600000
+ 12859 strings out of 467525
+ 198589 string characters out of 5418982
+ 856367 words of memory out of 5000000
+ 41507 multiletter control sequences out of 15000+600000
  685590 words of font info for 74 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,6n,79p,845b,1231s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,6n,79p,899b,1246s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr6.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtk10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt9.pfb>
-Output written on relazione.pdf (7 pages, 541766 bytes).
+Output written on relazione.pdf (10 pages, 565111 bytes).
 PDF statistics:
- 194 PDF objects out of 1000 (max. 8388607)
- 161 compressed objects within 2 object streams
- 57 named destinations out of 1000 (max. 500000)
+ 256 PDF objects out of 1000 (max. 8388607)
+ 219 compressed objects within 3 object streams
+ 101 named destinations out of 1000 (max. 500000)
  78 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -7,13 +7,25 @@
 \contentsline {paragraph}{Ricorsione concorrente e Map-Reduce.}{3}{section*.6}%
 \contentsline {paragraph}{Assenza di contesa e gestione dell'I/O bloccante.}{4}{section*.7}%
 \contentsline {subsection}{\numberline {2.2}Approccio Asincrono basato su Event Loop}{4}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}Approccio Reattivo con RX}{4}{subsection.2.3}%
-\contentsline {section}{\numberline {3}Architettura e Design}{4}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Design dell'implementazione Virtual Threads}{4}{subsection.3.1}%
-\contentsline {paragraph}{Il modello dati: \texttt {FSReport}.}{5}{section*.8}%
-\contentsline {paragraph}{La libreria: \texttt {FSStatLib}.}{5}{section*.9}%
-\contentsline {paragraph}{Il flusso ricorsivo: \texttt {processDirectory}.}{6}{section*.10}%
-\contentsline {paragraph}{Gestione degli errori.}{6}{section*.11}%
-\contentsline {paragraph}{Integrazione con la CLI.}{6}{section*.12}%
+\contentsline {paragraph}{Adattamento al problema.}{4}{section*.8}%
+\contentsline {paragraph}{Concorrenza tramite \texttt {Promise.all}.}{4}{section*.9}%
+\contentsline {paragraph}{Assenza di sincronizzazione per costruzione.}{4}{section*.10}%
+\contentsline {paragraph}{Gestione degli errori e robustezza.}{5}{section*.11}%
+\contentsline {subsection}{\numberline {2.3}Approccio Reattivo con RX}{5}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Architettura e Design}{5}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Design dell'implementazione Virtual Threads}{5}{subsection.3.1}%
+\contentsline {paragraph}{Il modello dati: \texttt {FSReport}.}{5}{section*.12}%
+\contentsline {paragraph}{La libreria: \texttt {FSStatLib}.}{5}{section*.13}%
+\contentsline {paragraph}{Il flusso ricorsivo: \texttt {processDirectory}.}{6}{section*.14}%
+\contentsline {paragraph}{Gestione degli errori.}{7}{section*.15}%
+\contentsline {paragraph}{Integrazione con la CLI.}{7}{section*.16}%
 \contentsline {subsection}{\numberline {3.2}Design dell'implementazione Event Loop}{7}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}Design dell'implementazione RX}{7}{subsection.3.3}%
+\contentsline {paragraph}{Struttura dei moduli.}{7}{section*.17}%
+\contentsline {paragraph}{Pattern di incapsulamento: factory function e interfaccia pubblica.}{8}{section*.18}%
+\contentsline {paragraph}{Il Branded Type \texttt {Path}.}{8}{section*.19}%
+\contentsline {paragraph}{Separazione del modello interno dall'API esterna: il metodo \texttt {dto()}.}{8}{section*.20}%
+\contentsline {paragraph}{Il flusso di traversal: \texttt {FsStatScannerImpl}.}{8}{section*.21}%
+\contentsline {paragraph}{Gestione degli errori a due livelli.}{9}{section*.22}%
+\contentsline {paragraph}{La façade pubblica: \texttt {index.ts}.}{9}{section*.23}%
+\contentsline {paragraph}{CLI e misurazione delle prestazioni.}{9}{section*.24}%
+\contentsline {subsection}{\numberline {3.3}Design dell'implementazione RX}{9}{subsection.3.3}%
