@@ -58,10 +58,40 @@ programmazione asincrona basata su event loop, e la programmazione reattiva con 
 \newpage
 
 \section{Introduzione e Requisiti}
-Il progetto prevede la creazione di una libreria asincrona in grado di esplorare il file system a partire da una directory radice e fornire un report statistico (numero totale di file e raggruppamento in bande in base alla dimensione). 
 
-Oltre al requisito base, è stato implementato il requisito opzionale che prevede la possibilità di fermare la computazione in qualsiasi momento e di ricevere aggiornamenti in tempo reale sulle statistiche. 
+\subsection*{Obiettivo}
 
+L'obiettivo è la realizzazione della libreria \texttt{FSStatLib}, che espone un metodo asincrono \texttt{getFSReport} per l'analisi statistica delle dimensioni dei file contenuti in un albero di directory del file system. Dato un percorso radice \texttt{D}, il metodo calcola e restituisce in modo asincrono un report \texttt{R} contenente:
+
+\begin{itemize}
+    \item il \textbf{numero totale di file} presenti in \texttt{D}, incluse ricorsivamente tutte le sottodirectory;
+    \item la \textbf{distribuzione delle dimensioni} dei file: dato un valore massimo di dimensione \texttt{MaxFS} e un numero di bande \texttt{NB}, il range \texttt{[0, MaxFS]} viene suddiviso in \texttt{NB} intervalli di ampiezza uniforme; per ciascun intervallo viene contato il numero di file la cui dimensione vi rientra. Viene inoltre conteggiata separatamente la quantità di file con dimensione superiore a \texttt{MaxFS}. Il report include quindi complessivamente \texttt{NB + 1} contatori.
+\end{itemize}
+
+I parametri \texttt{D}, \texttt{MaxFS} e \texttt{NB} sono forniti dal chiamante come argomenti del metodo.
+
+\subsection*{Versioni implementate}
+
+Il progetto è stato declinato in \textbf{tre versioni indipendenti}, ciascuna aderente a una specifica disciplina di programmazione concorrente discussa durante il corso:
+
+\begin{enumerate}
+    \item \textbf{Virtual Threads} (Java): paradigma \textit{thread-per-task} con Virtual Thread leggeri gestiti dalla JVM.
+    \item \textbf{Programmazione asincrona basata su Event Loop}: composizione di operazioni non bloccanti tramite \texttt{CompletableFuture} e callback.
+    \item \textbf{Programmazione reattiva con RX}: modellazione del file system traversal come stream di eventi, elaborato tramite operatori funzionali (RxJava).
+\end{enumerate}
+
+Un vincolo di progetto esplicito impone che le tre versioni siano sviluppate in modo \textbf{indipendente}, senza generalizzare o riutilizzare codice tra di esse qualora ciò compromettesse la purezza della disciplina di programmazione propria di ciascun approccio.
+
+\subsection*{Requisito opzionale}
+
+Il progetto prevede un requisito opzionale [\textasteriskcentered], obbligatorio per il conseguimento della lode, che estende la libreria con funzionalità interattive:
+
+\begin{itemize}
+    \item possibilità di \textbf{interrompere} la generazione del report in qualsiasi momento;
+    \item \textbf{aggiornamenti dinamici} delle statistiche durante la computazione, visualizzabili in tempo reale.
+\end{itemize}
+
+A supporto di queste funzionalità è prevista una \textbf{GUI minimale}, dotata di controlli per avviare e interrompere la scansione e di un'area di visualizzazione per il monitoraggio progressivo del report.
 \section{Analisi del Problema e Scelte Concorrenti}
 L'attraversamento ricorsivo di un file system e l'interrogazione delle proprietà dei file sono tipiche operazioni legate all'I/O. In questi scenari di I/O-bound, l'uso intensivo dei classici thread di piattaforma presenta gravi limiti di scalabilità. Per esplorare soluzioni diverse a questo problema di concorrenza, il progetto è stato declinato in tre paradigmi distinti.
 
@@ -127,8 +157,66 @@ L'attraversamento del file system è stato modellato come uno stream asincrono d
 Il progetto è suddiviso seguendo il principio di Separazione delle Responsabilità (Separation of Concerns). Oltre al livello dell'interfaccia (CLI e GUI), la logica di dominio (il package \texttt{lib}) è stata strutturata per accomodare le tre diverse implementazioni tramite un'interfaccia comune, permettendo al chiamante di scegliere il motore di concorrenza preferito.
 
 \subsection{Design dell'implementazione Virtual Threads}
-L'architettura con Virtual Threads mantiene uno stile di programmazione imperativo e sequenziale, molto intuitivo da scrivere e da leggere. L'ingresso avviene sottomettendo i task a un \texttt{Executors.newVirtualThreadPerTaskExecutor()}[cite: 1]. L'aggregazione dei risultati sfrutta le chiamate bloccanti naturali (\texttt{Future.get()}), che risultano sicure e altamente scalabili proprio grazie alla meccanica di \textit{unmounting}[cite: 1]. L'interruzione dinamica (stop) viene propagata controllando periodicamente un flag \texttt{volatile} condiviso.
 
+L'implementazione con Virtual Threads è articolata in due classi principali nel package \texttt{it.unibo.fsstat.lib}: \texttt{FSReport}, che modella il risultato della computazione, e \texttt{FSStatLib}, che ne orchestra l'esecuzione concorrente. La CLI (\texttt{Main}) interagisce esclusivamente con l'interfaccia pubblica di \texttt{FSStatLib}, rimanendo ignara del paradigma di concorrenza sottostante.
+
+\paragraph{Il modello dati: \texttt{FSReport}.}
+
+\texttt{FSReport} è un \textit{value object} che incapsula tre informazioni: il conteggio totale dei file (\texttt{totalFiles}), i parametri di classificazione (\texttt{maxFS} e \texttt{nb}), e un array \texttt{distribution} di dimensione \texttt{nb + 1}. Le prime \texttt{nb} celle corrispondono alle bande di dimensione nell'intervallo \texttt{[0, maxFS]}, mentre la cella di indice \texttt{nb} raccoglie i file che superano \texttt{maxFS}.
+
+La classificazione di un singolo file avviene nel metodo \texttt{addFile(long size)}, che calcola l'indice di banda tramite divisione intera:
+
+\begin{lstlisting}[language=Java]
+double step = (double) maxFS / nb;
+int bandIndex = (int) (size / step);
+if (bandIndex == nb) bandIndex = nb - 1; // Caso limite: size == maxFS
+\end{lstlisting}
+
+Il metodo \texttt{merge(FSReport other)} somma componente per componente i due array \texttt{distribution} e accumula i conteggi di \texttt{totalFiles}. Questa operazione è la chiave del pattern Map-Reduce: è associativa e non richiede alcuna sincronizzazione perché viene sempre invocata in modo sequenziale dal Virtual Thread padre dopo che i figli sono terminati.
+
+\paragraph{La libreria: \texttt{FSStatLib}.}
+
+L'interfaccia pubblica espone un unico metodo:
+
+\begin{lstlisting}[language=Java]
+public CompletableFuture<FSReport> getFSReport(
+        String directoryPath, long maxFS, int nb)
+\end{lstlisting}
+
+La restituzione di una \texttt{CompletableFuture} disaccoppia il chiamante dalla concorrenza interna: la CLI può concatenare callback (\texttt{thenAccept}) oppure attendere sincronamente con \texttt{join()}, senza dover conoscere né i Virtual Thread né l'executor sottostante.
+
+Internamente, \texttt{getFSReport} avvia la computazione tramite \texttt{CompletableFuture.supplyAsync()}, che esegue il corpo su un thread del \texttt{ForkJoinPool} comune. Da questo contesto viene creato l'executor dedicato ai Virtual Thread:
+
+\begin{lstlisting}[language=Java]
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    Path rootPath = Paths.get(directoryPath);
+    return processDirectory(rootPath, maxFS, nb, executor).get();
+}
+\end{lstlisting}
+
+Il blocco \texttt{try-with-resources} ha una funzione di lifecycle management precisa: alla sua uscita, \texttt{ExecutorService.close()} invoca \texttt{shutdown()} e \texttt{awaitTermination()}, assicurando che tutti i Virtual Thread lanciati ricorsivamente abbiano completato la propria esecuzione prima che il risultato venga restituito alla \texttt{CompletableFuture}.
+
+\paragraph{Il flusso ricorsivo: \texttt{processDirectory}.}
+
+\texttt{processDirectory} è il cuore dell'algoritmo. Ogni sua invocazione sottomette all'executor un nuovo task — e quindi un nuovo Virtual Thread — incaricato di elaborare una singola directory. Il flusso interno al task segue tre fasi:
+
+\begin{enumerate}
+    \item \textbf{Scansione locale}: si itera sul contenuto della directory tramite \texttt{Files.newDirectoryStream()}. Per ogni file regolare, \texttt{Files.size()} legge la dimensione dal disco (operazione I/O bloccante) e la classifica nel \texttt{FSReport} locale al thread. Per ogni sottodirectory, si invoca ricorsivamente \texttt{processDirectory}, raccogliendo il \texttt{Future<FSReport>} restituito in una lista (\texttt{subTasks}).
+
+    \item \textbf{Riduzione (join)}: terminata la scansione, il Virtual Thread chiama \texttt{task.get()} su ciascun elemento di \texttt{subTasks}. Se il task figlio non è ancora completato, il Virtual Thread si sospende — effettuando l'\textit{unmount} dal carrier thread — e si risveglia non appena il risultato è disponibile. I report parziali vengono fusi nel report locale tramite \texttt{merge()}.
+
+    \item \textbf{Restituzione}: il report locale, ora completo di tutti i contributi dei sottoalberi, viene restituito come valore del \texttt{Callable} sottomesso all'executor.
+\end{enumerate}
+
+La struttura risultante è un albero di Virtual Thread isomorfo all'albero delle directory: ogni nodo dell'albero FS corrisponde a un task concorrente, e la riduzione avviene bottom-up per propagazione dei \texttt{Future}.
+
+\paragraph{Gestione degli errori.}
+
+Gli errori di accesso al file system (directory protette, symlink non risolvibili) vengono catturati localmente da un blocco \texttt{catch (IOException e)} all'interno di ciascun task: la directory inaccessibile viene saltata con un messaggio su \texttt{stderr}, mentre la computazione prosegue sui nodi raggiungibili. Eventuali eccezioni non gestite che sfuggono al task vengono incapsulate in una \texttt{CompletionException} e propagate al chiamante tramite la \texttt{CompletableFuture}, che entra nello stato \textit{exceptionally completed} e può essere intercettata con \texttt{.exceptionally()}.
+
+\paragraph{Integrazione con la CLI.}
+
+In \texttt{Main}, il chiamante configura i tre parametri della scansione (\texttt{directoryPath}, \texttt{maxFS}, \texttt{nb}) e concatena alla \texttt{CompletableFuture} una callback \texttt{thenAccept} per la stampa del report. La chiamata \texttt{.join()} finale blocca il thread principale fino al completamento, evitando che il programma termini prima che la computazione asincrona sia conclusa. La formattazione del report calcola le etichette delle bande moltiplicando l'indice per \texttt{bandSize = maxFS / nb}, producendo intervalli del tipo \texttt{[i·bandSize, (i+1)·bandSize]}.
 \subsection{Design dell'implementazione Event Loop}
 L'architettura in questo caso sfrutta pesantemente le chiusure (closures) e il concatenamento asincrono. L'esplorazione utilizza metodi ricorsivi che restituiscono \texttt{CompletableFuture}, elaborati su un pool ristretto (\texttt{ForkJoinPool.commonPool} o un executor custom). A differenza dei Virtual Threads, lo stato condiviso per il report può essere gestito spesso senza lock pesanti, incapsulando gli aggiornamenti direttamente nei thread del loop o riducendo i risultati alla fine della catena (\textit{Map-Reduce} puramente funzionale). Il meccanismo di stop si basa sull'interruzione della propagazione delle callback.
 
@@ -140,6 +228,8 @@ Il design reattivo stravolge l'architettura passando dalla "richiesta di dati" (
 \end{itemize}
 
 \section{Risultati e Osservazioni}
-Dai test effettuati localmente, l'overhead della creazione di migliaia di Virtual Threads è risultato impercettibile, permettendo all'applicazione di consumare una frazione della RAM che sarebbe stata necessaria usando un pool cached di platform threads Virtual Threads.pdf]. Il sistema è risultato stabile, senza mai incorrere in \texttt{OutOfMemoryError}, confermando le tesi sulla scalabilità di questo nuovo paradigma su workload I/O-bound.
+Dai test effettuati localmente, l'overhead della creazione di migliaia di Virtual Threads è risultato impercettibile, permettendo all'applicazione di consumare una frazione della
+ RAM che sarebbe stata necessaria usando un pool cached di platform threads. Il sistema è risultato stabile, senza mai incorrere 
+ in \texttt{OutOfMemoryError}, confermando le tesi sulla scalabilità di questo nuovo paradigma su workload I/O-bound.
 
 \end{document}

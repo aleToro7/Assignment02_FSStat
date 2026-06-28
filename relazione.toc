@@ -2,14 +2,19 @@
 \babel@toc {italian}{}\relax 
 \contentsline {section}{\numberline {1}Introduzione e Requisiti}{2}{section.1}%
 \contentsline {section}{\numberline {2}Analisi del Problema e Scelte Concorrenti}{2}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Approccio con i Virtual Threads}{2}{subsection.2.1}%
-\contentsline {paragraph}{Struttura dell'implementazione.}{2}{section*.2}%
-\contentsline {paragraph}{Ricorsione concorrente e Map-Reduce.}{2}{section*.3}%
-\contentsline {paragraph}{Assenza di contesa e gestione dell'I/O bloccante.}{3}{section*.4}%
-\contentsline {subsection}{\numberline {2.2}Approccio Asincrono basato su Event Loop}{3}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}Approccio Reattivo con RX}{3}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.1}Approccio con i Virtual Threads}{3}{subsection.2.1}%
+\contentsline {paragraph}{Struttura dell'implementazione.}{3}{section*.5}%
+\contentsline {paragraph}{Ricorsione concorrente e Map-Reduce.}{3}{section*.6}%
+\contentsline {paragraph}{Assenza di contesa e gestione dell'I/O bloccante.}{4}{section*.7}%
+\contentsline {subsection}{\numberline {2.2}Approccio Asincrono basato su Event Loop}{4}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Approccio Reattivo con RX}{4}{subsection.2.3}%
 \contentsline {section}{\numberline {3}Architettura e Design}{4}{section.3}%
 \contentsline {subsection}{\numberline {3.1}Design dell'implementazione Virtual Threads}{4}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}Design dell'implementazione Event Loop}{4}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}Design dell'implementazione RX}{4}{subsection.3.3}%
-\contentsline {section}{\numberline {4}Risultati e Osservazioni}{4}{section.4}%
+\contentsline {paragraph}{Il modello dati: \texttt {FSReport}.}{5}{section*.8}%
+\contentsline {paragraph}{La libreria: \texttt {FSStatLib}.}{5}{section*.9}%
+\contentsline {paragraph}{Il flusso ricorsivo: \texttt {processDirectory}.}{5}{section*.10}%
+\contentsline {paragraph}{Gestione degli errori.}{6}{section*.11}%
+\contentsline {paragraph}{Integrazione con la CLI.}{6}{section*.12}%
+\contentsline {subsection}{\numberline {3.2}Design dell'implementazione Event Loop}{6}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Design dell'implementazione RX}{6}{subsection.3.3}%
+\contentsline {section}{\numberline {4}Risultati e Osservazioni}{6}{section.4}%

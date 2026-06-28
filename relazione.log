@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.28)  28 JUN 2026 16:46
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.28)  28 JUN 2026 16:57
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -398,17 +398,47 @@ LaTeX Font Info:    External font `lmex10' loaded for size
  [1
 
 {/usr/local/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}]
-Overfull \hbox (118.78624pt too wide) in paragraph at lines 76--77
+Overfull \hbox (17.11707pt too wide) in paragraph at lines 64--65
+\T1/lmr/m/n/10.95 L'obiettivo è la rea-liz-za-zio-ne del-la li-bre-ria \T1/lmtt/m/n/10.95 FSStatLib\T1/lmr/m/n/10.95 , che espo-ne un me-to-do asin-cro-no \T1/lmtt/m/n/10.95 getFSReport
+ []
+
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 67.
+(/usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmr.fd
+File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+) [2{/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}]
+Overfull \hbox (118.78624pt too wide) in paragraph at lines 106--107
 \T1/lmr/m/n/10.95 chia-man-te (CLI o GUI). In-ter-na-men-te, la com-pu-ta-zio-ne rea-le vie-ne av-via-ta tra-mi-te \T1/lmtt/m/n/10.95 CompletableFuture.supplyAsync()\T1/lmr/m/n/10.95 ,
  []
 
 (/usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2025/11/14 1.11b listings language file
-)
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 92.
- (/usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmr.fd
-File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-) [2{/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}] [3] [4] (./relazione.aux)
+) [3]
+Overfull \hbox (66.72946pt too wide) in paragraph at lines 161--162
+\T1/lmr/m/n/10.95 L'implementazione con Vir-tual Th-reads è ar-ti-co-la-ta in due clas-si prin-ci-pa-li nel pac-ka-ge \T1/lmtt/m/n/10.95 it.unibo.fsstat.lib\T1/lmr/m/n/10.95 :
+ []
+
+LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10.95> not available
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 165.
+[4]
+Overfull \hbox (29.24861pt too wide) in paragraph at lines 175--176
+[]\T1/lmr/m/n/10.95 Il me-to-do \T1/lmtt/m/n/10.95 merge(FSReport other) \T1/lmr/m/n/10.95 som-ma com-po-nen-te per com-po-nen-te i due ar-ray \T1/lmtt/m/n/10.95 distribution
+ []
+
+
+Overfull \hbox (24.78217pt too wide) in paragraph at lines 188--189
+[]\T1/lmr/m/n/10.95 Internamente, \T1/lmtt/m/n/10.95 getFSReport \T1/lmr/m/n/10.95 av-via la com-pu-ta-zio-ne tra-mi-te \T1/lmtt/m/n/10.95 CompletableFuture.supplyAsync()\T1/lmr/m/n/10.95 ,
+ []
+
+
+Overfull \hbox (28.76453pt too wide) in paragraph at lines 204--205
+[]\T1/lmr/bx/n/10.95 Scansione lo-ca-le\T1/lmr/m/n/10.95 : si ite-ra sul con-te-nu-to del-la di-rec-to-ry tra-mi-te \T1/lmtt/m/n/10.95 Files.newDirectoryStream()\T1/lmr/m/n/10.95 .
+ []
+
+[5]
+LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 219.
+ (/usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmtt.fd
+File: ts1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+) [6] (./relazione.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -417,18 +447,18 @@ Package rerunfilecheck Info: File `relazione.out' has not changed.
 (rerunfilecheck)             Checksum: BD552E2406FC4D6C9F421282AB18340D;2193.
  ) 
 Here is how much of TeX's memory you used:
- 12697 strings out of 467525
- 196109 string characters out of 5418982
- 837639 words of memory out of 5000000
- 41423 multiletter control sequences out of 15000+600000
- 684967 words of font info for 72 fonts, out of 8000000 for 9000
+ 12776 strings out of 467525
+ 197295 string characters out of 5418982
+ 886284 words of memory out of 5000000
+ 41469 multiletter control sequences out of 15000+600000
+ 685590 words of font info for 74 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,6n,79p,825b,1231s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr6.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt9.pfb>
-Output written on relazione.pdf (4 pages, 220503 bytes).
+ 75i,6n,79p,845b,1231s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr6.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtk10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt9.pfb>
+Output written on relazione.pdf (6 pages, 260117 bytes).
 PDF statistics:
- 140 PDF objects out of 1000 (max. 8388607)
- 115 compressed objects within 2 object streams
- 28 named destinations out of 1000 (max. 500000)
+ 189 PDF objects out of 1000 (max. 8388607)
+ 159 compressed objects within 2 object streams
+ 56 named destinations out of 1000 (max. 500000)
  81 words of extra memory for PDF output out of 10000 (max. 10000000)
 
