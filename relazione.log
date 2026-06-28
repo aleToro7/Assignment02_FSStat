@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.28)  28 JUN 2026 16:16
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.3.28)  28 JUN 2026 16:46
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -384,7 +384,7 @@ LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 51
  (/usr/local/texlive/2026/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
-Overfull \hbox (15.22246pt too wide) in paragraph at lines 51--52
+Overfull \hbox (15.22246pt too wide) in paragraph at lines 51--55
 []\T1/lmr/m/n/10 Il pre-sen-te do-cu-men-to de-scri-ve la pro-get-ta-zio-ne e l'im-ple-men-ta-zio-ne del-la li-bre-ria \T1/lmtt/m/n/10 FSStatLib\T1/lmr/m/n/10 ,
  []
 
@@ -398,37 +398,37 @@ LaTeX Font Info:    External font `lmex10' loaded for size
  [1
 
 {/usr/local/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}]
-Overfull \hbox (39.64767pt too wide) in paragraph at lines 68--69
-\T1/lmr/m/n/10.95 in-con-tra-ta du-ran-te l'e-splo-ra-zio-ne, vie-ne sot-to-mes-so un nuo-vo ta-sk a un \T1/lmtt/m/n/10.95 VirtualThreadPerTaskExecutor
+Overfull \hbox (118.78624pt too wide) in paragraph at lines 76--77
+\T1/lmr/m/n/10.95 chia-man-te (CLI o GUI). In-ter-na-men-te, la com-pu-ta-zio-ne rea-le vie-ne av-via-ta tra-mi-te \T1/lmtt/m/n/10.95 CompletableFuture.supplyAsync()\T1/lmr/m/n/10.95 ,
  []
 
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 80.
-(/usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmr.fd
-File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+(/usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstlang1.sty
+File: lstlang1.sty 2025/11/14 1.11b listings language file
 )
-LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10.95> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 80.
- [2{/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}] [3] (./relazione.aux)
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 92.
+ (/usr/local/texlive/2026/texmf-dist/tex/latex/lm/ts1lmr.fd
+File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+) [2{/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}] [3] [4] (./relazione.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `relazione.out' has not changed.
-(rerunfilecheck)             Checksum: 0B43A24F8D004F02AA88EF4EECB43EF9;1522.
+(rerunfilecheck)             Checksum: BD552E2406FC4D6C9F421282AB18340D;2193.
  ) 
 Here is how much of TeX's memory you used:
- 12318 strings out of 467525
- 192591 string characters out of 5418982
- 627979 words of memory out of 5000000
- 41065 multiletter control sequences out of 15000+600000
- 678981 words of font info for 70 fonts, out of 8000000 for 9000
+ 12697 strings out of 467525
+ 196109 string characters out of 5418982
+ 837639 words of memory out of 5000000
+ 41423 multiletter control sequences out of 15000+600000
+ 684967 words of font info for 72 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,6n,79p,756b,459s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtk10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt10.pfb>
-Output written on relazione.pdf (3 pages, 190183 bytes).
+ 75i,6n,79p,825b,1231s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr12.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmr6.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmri10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/lm/lmtt9.pfb>
+Output written on relazione.pdf (4 pages, 220503 bytes).
 PDF statistics:
- 100 PDF objects out of 1000 (max. 8388607)
- 79 compressed objects within 1 object stream
- 12 named destinations out of 1000 (max. 500000)
- 57 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 140 PDF objects out of 1000 (max. 8388607)
+ 115 compressed objects within 2 object streams
+ 28 named destinations out of 1000 (max. 500000)
+ 81 words of extra memory for PDF output out of 10000 (max. 10000000)
 

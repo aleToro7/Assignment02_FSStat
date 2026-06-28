@@ -2,8 +2,14 @@
 \babel@toc {italian}{}\relax 
 \contentsline {section}{\numberline {1}Introduzione e Requisiti}{2}{section.1}%
 \contentsline {section}{\numberline {2}Analisi del Problema e Scelte Concorrenti}{2}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Approccio Thread-Per-Task con i Virtual Threads}{2}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}Evitare il problema dei Pinned Threads}{2}{subsection.2.2}%
-\contentsline {section}{\numberline {3}Architettura e Design}{2}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Meccanismo di Cancellazione}{3}{subsection.3.1}%
-\contentsline {section}{\numberline {4}Risultati e Osservazioni}{3}{section.4}%
+\contentsline {subsection}{\numberline {2.1}Approccio con i Virtual Threads}{2}{subsection.2.1}%
+\contentsline {paragraph}{Struttura dell'implementazione.}{2}{section*.2}%
+\contentsline {paragraph}{Ricorsione concorrente e Map-Reduce.}{2}{section*.3}%
+\contentsline {paragraph}{Assenza di contesa e gestione dell'I/O bloccante.}{3}{section*.4}%
+\contentsline {subsection}{\numberline {2.2}Approccio Asincrono basato su Event Loop}{3}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Approccio Reattivo con RX}{3}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Architettura e Design}{4}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Design dell'implementazione Virtual Threads}{4}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Design dell'implementazione Event Loop}{4}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Design dell'implementazione RX}{4}{subsection.3.3}%
+\contentsline {section}{\numberline {4}Risultati e Osservazioni}{4}{section.4}%
