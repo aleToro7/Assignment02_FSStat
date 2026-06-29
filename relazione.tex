@@ -112,7 +112,10 @@ try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
 }
 \end{lstlisting}
 
-La chiusura automatica dell'executor al termine del blocco \texttt{try} ha una semantica cruciale: \texttt{ExecutorService.close()} invoca \texttt{shutdown()} seguito da \texttt{awaitTermination()}, garantendo che nessun task figlio venga abbandonato prima che il risultato finale sia disponibile. Questo meccanismo funge da \textit{barriera di sincronizzazione} implicita su tutto l'albero dei task.
+La chiusura automatica dell'executor al termine del blocco \texttt{try} ha una semantica cruciale: 
+\texttt{ExecutorService.close()}, (che viene invocato automaticamente nel blocco \texttt{try-with-resources}) invoca \texttt{shutdown()} seguito da \texttt{awaitTermination()}, 
+garantendo che nessun task figlio venga abbandonato prima che il risultato finale sia disponibile.
+ Questo meccanismo funge da \textit{barriera di sincronizzazione} implicita su tutto l'albero dei task.
 
 \paragraph{Ricorsione concorrente e Map-Reduce.}
 
@@ -178,7 +181,6 @@ La terza tecnologia utilizza la Programmazione Reattiva (es. RxJava), un paradig
 L'attraversamento del file system è stato modellato come uno stream asincrono di eventi (file trovati o directory aperte) emessi da un \textit{Publisher} / \textit{Observable}. L'approccio reattivo ha permesso di operare in modo puramente dichiarativo: attraverso operatori funzionali (\texttt{map}, \texttt{flatMap}, \texttt{filter}, \texttt{scan}) gli eventi vengono trasformati e aggregati al volo per costruire il report. Questo approccio è intrinsecamente non bloccante e facilita enormemente la gestione degli aggiornamenti in tempo reale per la GUI.
 
 \section{Architettura e Design}
-Il progetto è suddiviso seguendo il principio di Separazione delle Responsabilità (Separation of Concerns). Oltre al livello dell'interfaccia (CLI e GUI), la logica di dominio (il package \texttt{lib}) è stata strutturata per accomodare le tre diverse implementazioni tramite un'interfaccia comune, permettendo al chiamante di scegliere il motore di concorrenza preferito.
 
 \subsection{Design dell'implementazione Virtual Threads}
 
