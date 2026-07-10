@@ -11,6 +11,7 @@
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{graphicx}
+\usepackage{float}
 
 % Configurazione per l'inserimento di codice
 \definecolor{codegreen}{rgb}{0,0.6,0}
@@ -177,8 +178,26 @@ Una proprietà fondamentale di questo approccio è che l'aggiornamento dello sta
 
 L'implementazione distingue due categorie di errori di I/O. Gli errori di accesso (\texttt{EACCES}, \texttt{EPERM}) vengono silenziosamente ignorati tramite \texttt{.catch()}, permettendo alla scansione di proseguire sui nodi raggiungibili. Gli errori strutturali (\texttt{ENOENT}, \texttt{ENOTDIR}) vengono invece convertiti in eccezioni tipizzate e propagati al chiamante, causando il rigetto della \texttt{Promise} restituita da \texttt{getReport}. È inoltre presente una \textit{blacklist} di path di sistema (\texttt{/proc}, \texttt{/sys}, \texttt{/dev} e altri) che vengono esclusi preventivamente dalla scansione per evitare loop infiniti o comportamenti non deterministici su filesystem virtuali.
 \subsection{Approccio Reattivo con RX}
-La terza tecnologia utilizza la Programmazione Reattiva (es. RxJava), un paradigma orientato ai flussi di dati (Data Streams) e alla propagazione dei cambiamenti. 
-L'attraversamento del file system è stato modellato come uno stream asincrono di eventi (file trovati o directory aperte) emessi da un \textit{Publisher} / \textit{Observable}. L'approccio reattivo ha permesso di operare in modo puramente dichiarativo: attraverso operatori funzionali (\texttt{map}, \texttt{flatMap}, \texttt{filter}, \texttt{scan}) gli eventi vengono trasformati e aggregati al volo per costruire il report. Questo approccio è intrinsecamente non bloccante e facilita enormemente la gestione degli aggiornamenti in tempo reale per la GUI.
+La terza tecnologia utilizza la Programmazione Reattiva, nella sua declinazione \textbf{RxJava}, un paradigma orientato ai flussi di dati (\textit{data stream}) e alla loro trasformazione dichiarativa tramite operatori funzionali. A differenza dei Virtual Thread e dell'Event Loop, dove la concorrenza è governata esplicitamente dal programmatore (sottomissione di task, composizione di \texttt{Promise}), nel modello reattivo è la libreria stessa a occuparsi dello scheduling: il compito dello sviluppatore si riduce a descrivere \textit{cosa} deve accadere ai dati che attraversano la pipeline, non \textit{come} e \textit{su quale thread} ciò debba avvenire.
+
+\paragraph{Adattamento al problema.}
+
+L'attraversamento del file system viene modellato come un flusso di eventi: ogni file incontrato durante la visita ricorsiva dell'albero di directory viene emesso come elemento di un \texttt{Flowable<File>}. Si tratta di un workload che presenta due nature distinte, ciascuna gestita da un meccanismo RX differente:
+
+\begin{itemize}
+    \item la \textbf{produzione} degli eventi (l'attraversamento delle directory tramite \texttt{File.listFiles()}) è un'operazione I/O-bound, intrinsecamente sequenziale nella sua fase di scoperta dei nodi dell'albero;
+    \item il \textbf{consumo} degli eventi (la classificazione di ciascun file nella fascia di dimensione corretta e l'aggiornamento del report) è invece un'operazione CPU-bound, priva di dipendenze tra un file e l'altro, e quindi parallelizzabile senza vincoli.
+\end{itemize}
+
+Questa distinzione ha guidato la scelta degli operatori: la generazione dello stream avviene tramite un \textit{Publisher} custom, mentre l'elaborazione a valle sfrutta l'operatore \texttt{parallel()} di RxJava per distribuire il carico di classificazione su più thread.
+
+\paragraph{Backpressure e disaccoppiamento produttore-consumatore.}
+
+Poiché la fase di scoperta dei file può produrre eventi più velocemente di quanto la pipeline a valle riesca a consumarli (specialmente su alberi di directory molto popolati), è necessario un meccanismo di \textit{backpressure} che regoli il flusso tra produttore e consumatore evitando un consumo di memoria incontrollato o eccezioni di overflow. RxJava affronta questo problema tramite il tipo \texttt{Flowable}, che a differenza di \texttt{Observable} implementa nativamente il protocollo \textit{Reactive Streams}.
+
+\paragraph{Cancellazione cooperativa.}
+
+Un ulteriore vantaggio del modello reattivo, rilevante per il requisito opzionale di interruzione della scansione, è che ogni stream RX è \textit{cancellabile}: disiscriversi da un \texttt{Flowable} (o disporre di una \texttt{Disposable}) propaga automaticamente un segnale di cancellazione fino alla sorgente. Il produttore può interrogare periodicamente questo stato per interrompere tempestivamente un lavoro non più necessario, senza dover implementare a mano alcun meccanismo di interrupt flag condiviso, come sarebbe invece necessario con i thread tradizionali.
 
 \section{Architettura e Design}
 
@@ -254,7 +273,7 @@ In \texttt{Main}, il chiamante configura i tre parametri della scansione (\textt
 
 L'implementazione con Event Loop è sviluppata in \textbf{TypeScript} sul runtime \textbf{Node.js}, ed è organizzata in moduli con responsabilità ben separate. A differenza della versione Java con Virtual Threads, l'intera concorrenza è ottenuta senza istanziare alcun thread esplicitamente: il parallelismo emerge dalla composizione di \texttt{Promise} gestite dall'event loop di Node.js e dal thread pool di \textit{libuv}.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{./immagini/typescript_architecture.png}
     \caption{Diagramma UML delle classi dell'implementazione con Event Loop (TypeScript).}
@@ -356,10 +375,86 @@ Il consumer può importare \texttt{getFSReport} direttamente come funzione, senz
 
 Il modulo \texttt{main.ts} implementa la CLI: legge il path da \texttt{process.argv[2]} con fallback alla directory corrente (\texttt{process.cwd()}), configura i parametri (\texttt{maxSize = 100 MB}, \texttt{nb = 5}) tramite l'utility \texttt{FileSize.megabyte()}, e misura il tempo di esecuzione con \texttt{benchmark()}. Quest'ultima funzione, basata su \texttt{process.hrtime.bigint()} per precisione al nanosecondo, restituisce sia il risultato che la durata in millisecondi, che vengono poi stampati in formato JSON indentato tramite \texttt{JSON.stringify(report, null, 2)}.
 \subsection{Design dell'implementazione RX}
-Il design reattivo stravolge l'architettura passando dalla "richiesta di dati" (pull) alla "reazione agli eventi" (push). La libreria espone un \texttt{Flowable<FSReport>} o \texttt{Observable<FSReport>}. 
-\begin{itemize}
-    \item \textbf{Aggiornamenti Dinamici:} La GUI si limita a effettuare una \texttt{subscribe()} sullo stream, ricevendo un nuovo snapshot del report ogniqualvolta la pipeline reattiva emette un aggiornamento.
-    \item \textbf{Cancellazione:} Per fermare il task è sufficiente invocare il metodo \texttt{dispose()} (o disiscriversi dallo stream); il framework RX propaga istantaneamente e in modo automatico il segnale di interruzione alla sorgente (l'esploratore delle directory), chiudendo pulitamente le risorse aperte.
-\end{itemize}
+
+L'implementazione reattiva è articolata, in analogia con la versione a Virtual Thread, in due classi principali del package \texttt{lib}: \texttt{Report}, che modella il risultato della computazione, e \texttt{FSStatLib}, che costruisce ed esegue la pipeline reattiva. La classe \texttt{Main} funge da consumer minimale, limitandosi a sottoscriversi al risultato prodotto dalla libreria.
+
+\paragraph{Il modello dati: \texttt{Report}.}
+
+\texttt{Report} è un oggetto mutabile che incapsula il conteggio totale dei file (\texttt{totalFiles}) e un array \texttt{sizeDistribution} di dimensione \texttt{nb + 1}, dove le prime \texttt{nb} celle corrispondono alle bande regolari nell'intervallo \texttt{[0, MaxFS]} e l'ultima cella raccoglie i file che superano \texttt{MaxFS}. Il metodo statico \texttt{calculateBandIndex(fileSize, maxFS, nb)} calcola l'indice di banda tramite divisione intera sull'ampiezza di banda \texttt{maxFS / nb}, gestendo separatamente i due casi limite: dimensione superiore a \texttt{MaxFS} (indice \texttt{nb}) e dimensione esattamente pari a \texttt{MaxFS} (ultima banda regolare, indice \texttt{nb - 1}), per evitare un accesso fuori dai limiti dell'array che si verificherebbe con un semplice arrotondamento.
+
+Come nelle altre due implementazioni, il metodo \texttt{merge(Report other)} è l'operazione cardine della strategia Map-Reduce: somma componente per componente le due distribuzioni e accumula i totali. Trattandosi di una somma, l'operazione è associativa e commutativa, il che la rende sicura da applicare in qualsiasi ordine durante le fasi di riduzione della pipeline.
+
+\paragraph{Generazione dello stream: \texttt{exploreDirectory}.}
+
+Il punto di partenza della pipeline è il metodo privato \texttt{exploreDirectory(File dir)}, che costruisce un \texttt{Flowable<File>} tramite \texttt{Flowable.create()}:
+
+\begin{lstlisting}[language=Java]
+private static Flowable<File> exploreDirectory(File dir) {
+    return Flowable.create(emitter -> {
+        traverse(dir, emitter);
+        emitter.onComplete();
+    }, BackpressureStrategy.BUFFER);
+}
+\end{lstlisting}
+
+La visita ricorsiva vera e propria è delegata al metodo di supporto \texttt{traverse()}, che scandisce l'albero di directory tramite \texttt{File.listFiles()}: per ogni sottodirectory richiama se stesso ricorsivamente, mentre per ogni file regolare invoca \texttt{emitter.onNext(file)}, immettendo l'elemento nello stream. A ogni iterazione viene verificato \texttt{emitter.isCancelled()}: se il consumer si è disiscritto (ad esempio tramite \texttt{dispose()} su una GUI che richiede l'interruzione), la visita si interrompe non appena possibile, evitando di proseguire un lavoro di cui nessuno è più interessato al risultato.
+
+La strategia \texttt{BackpressureStrategy.BUFFER} è stata scelta perché la fase di scoperta dei file (l'unica parte della pipeline eseguita in modo strettamente sequenziale, dato che \texttt{traverse()} non è parallelizzato) può produrre elementi più velocemente di quanto gli stadi a valle riescano a consumarli su alberi di directory molto popolati; il buffer disaccoppia produttore e consumatore accodando gli eventi in eccesso, a costo di un potenziale utilizzo di memoria proporzionale al numero di file non ancora elaborati.
+
+\paragraph{Parallelizzazione della classificazione: \texttt{ParallelFlowable}.}
+
+Una volta ottenuto lo stream sequenziale di \texttt{File}, l'operatore \texttt{parallel()} lo converte in un \texttt{ParallelFlowable}, suddividendo virtualmente il flusso in un numero di \textit{rail} pari, di default, al numero di core disponibili. L'operatore \texttt{runOn(Schedulers.io())} assegna concretamente ciascun rail a un thread dello scheduler I/O di RxJava (un pool elastico, pensato per un elevato numero di operazioni brevi e potenzialmente bloccanti), che è dove viene effettivamente eseguito il lavoro di classificazione:
+
+\begin{lstlisting}[language=Java]
+return exploreDirectory(rootDir)
+    .parallel()
+    .runOn(Schedulers.io())
+    .map(file -> {
+        Report partialReport = new Report(nb);
+        int bandIndex = Report.calculateBandIndex(file.length(), maxFS, nb);
+        partialReport.recordFile(bandIndex);
+        return partialReport;
+    })
+    .collect(() -> new Report(nb),
+             (railReport, partialReport) -> railReport.merge(partialReport))
+    .sequential()
+    .collect(() -> new Report(nb),
+             (mainReport, railReport) -> mainReport.merge(railReport));
+\end{lstlisting}
+
+Per ciascun file, l'operatore \texttt{map} produce un \texttt{Report} "puntuale", contenente il conteggio di un solo file già classificato nella banda corretta tramite \texttt{Report.calculateBandIndex()} e \texttt{recordFile()}. Questa scelta rende l'operazione di mapping pura e priva di effetti collaterali: ogni thread lavora esclusivamente su oggetti a sé locali, senza mai leggere o scrivere uno stato condiviso con gli altri rail.
+
+\paragraph{Riduzione a due livelli.}
+
+L'aggregazione dei report avviene in due fasi distinte, rispecchiando la struttura a "rail" del \texttt{ParallelFlowable}:
+
+\begin{enumerate}
+    \item Il primo \texttt{collect()}, eseguito ancora in contesto parallelo, fonde i \texttt{Report} puntuali prodotti da ciascun rail in un unico \texttt{Report} \textit{di rail}, tramite un accumulatore locale (\texttt{() -> new Report(nb)}) e la funzione di fusione \texttt{railReport.merge(partialReport)}. Poiché ogni rail possiede un proprio accumulatore privato, questa riduzione non richiede alcuna sincronizzazione: nessun altro thread accede contemporaneamente allo stesso \texttt{Report}.
+    \item L'operatore \texttt{sequential()} ricongiunge i rail paralleli in un unico \texttt{Flowable} standard, emettendo in sequenza i (al più \textit{n} core) report parziali di rail.
+    \item Il secondo \texttt{collect()} esegue la riduzione finale, fondendo sequenzialmente tutti i report di rail in un unico \texttt{Report} conclusivo, restituito come \texttt{Single<Report>}.
+\end{enumerate}
+
+Questa struttura a doppia riduzione è concettualmente identica al pattern Map-Reduce adottato dalle altre due versioni (fusione bottom-up di risultati locali), ma qui la "gerarchia" non rispecchia l'albero delle directory bensì la suddivisione in rail del \texttt{ParallelFlowable}: è la libreria RxJava, e non il programmatore, a decidere in quale rail e su quale thread ciascun elemento dello stream venga elaborato.
+
+\paragraph{Assenza di sincronizzazione esplicita.}
+
+Come nelle altre due implementazioni, in nessun punto della pipeline compaiono \texttt{synchronized}, \texttt{Lock} o variabili atomiche. La sicurezza rispetto alle race condition non deriva qui dall'assenza di stato condiviso (come nei Virtual Thread) né dalla \textit{run-to-completion semantics} di un singolo thread (come nell'Event Loop), bensì da una garanzia strutturale di RxJava: gli operatori \texttt{collect()} invocano il proprio accumulatore in modo strettamente sequenziale all'interno di ciascun rail, e ogni rail possiede un accumulatore proprio, non condiviso con gli altri. La libreria si fa quindi carico di serializzare gli accessi allo stato mutabile del report, sollevando lo sviluppatore da qualsiasi responsabilità di sincronizzazione manuale.
+
+\paragraph{Integrazione con la CLI: \texttt{Main} e ponte verso il modello bloccante.}
+
+Il metodo pubblico \texttt{getFSReport()} restituisce un \texttt{Single<Report>}, il tipo RX più adatto a rappresentare una computazione asincrona che produce esattamente un risultato (o un errore), analogo concettualmente alla \texttt{CompletableFuture} della versione a Virtual Thread. In \texttt{Main}, la sottoscrizione avviene tramite \texttt{subscribe()} con due callback distinte, per il caso di successo e per il caso di errore:
+
+\begin{lstlisting}[language=Java]
+reportSingle.subscribe(
+    report -> { System.out.println(report); latch.countDown(); },
+    error  -> { System.err.println(error.getMessage()); latch.countDown(); }
+);
+\end{lstlisting}
+
+Poiché la sottoscrizione è per sua natura non bloccante, il thread principale terminerebbe immediatamente senza attendere il risultato: per questo motivo \texttt{Main} introduce un \texttt{CountDownLatch(1)}, decrementato da entrambe le callback, e ne attende il rilascio con \texttt{latch.await()}. Questo meccanismo funge da ponte esplicito tra il mondo asincrono della pipeline reattiva e il modello di esecuzione sincrono di una CLI testuale, con un ruolo analogo a quello svolto da \texttt{.get()}/\texttt{.join()} nella versione a Virtual Thread.
+
+\paragraph{Gestione degli errori.}
+
+Se il percorso fornito non esiste o non è una directory, \texttt{getFSReport()} restituisce immediatamente un \texttt{Single.error()}, senza avviare alcuna elaborazione. Qualsiasi eccezione sollevata all'interno della pipeline (ad esempio durante l'accesso al file system) viene automaticamente incanalata da RxJava verso il canale di errore dello stream, raggiungendo la callback \texttt{onError} passata a \texttt{subscribe()} senza necessità di propagazione manuale tramite blocchi \texttt{try-catch} espliciti nel codice applicativo.
 
 \end{document}
