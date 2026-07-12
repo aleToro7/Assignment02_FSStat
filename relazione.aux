@@ -1,5 +1,5 @@
 \relax 
-\providecommand \babel@aux [2]{\global \let \babel@toc \@gobbletwo }
+\providecommand\babel@aux[2]{}
 \@nameuse{bbl@beforestart}
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
@@ -18,25 +18,35 @@
 \@writefile{toc}{\contentsline {paragraph}{Assenza di sincronizzazione per costruzione.}{4}{section*.10}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Gestione degli errori e robustezza.}{5}{section*.11}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Approccio Reattivo con RX}{5}{subsection.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}Architettura e Design}{5}{section.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Design dell'implementazione Virtual Threads}{5}{subsection.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Il modello dati: \texttt  {FSReport}.}{5}{section*.12}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{La libreria: \texttt  {FSStatLib}.}{5}{section*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Adattamento al problema.}{5}{section*.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Backpressure e disaccoppiamento produttore-consumatore.}{5}{section*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Cancellazione cooperativa.}{5}{section*.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Architettura e Design}{6}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Design dell'implementazione Virtual Threads}{6}{subsection.3.1}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Diagramma UML delle classi dell'implementazione con Virtual Threads.}}{6}{figure.1}\protected@file@percent }
 \newlabel{fig:uml-vt}{{1}{6}{Diagramma UML delle classi dell'implementazione con Virtual Threads}{figure.1}{}}
-\@writefile{toc}{\contentsline {paragraph}{Il flusso ricorsivo: \texttt  {processDirectory}.}{6}{section*.14}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Gestione degli errori.}{7}{section*.15}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Integrazione con la CLI.}{7}{section*.16}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Design dell'implementazione Event Loop}{7}{subsection.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Struttura dei moduli.}{7}{section*.17}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Pattern di incapsulamento: factory function e interfaccia pubblica.}{7}{section*.18}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Il Branded Type \texttt  {Path}.}{8}{section*.19}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Separazione del modello interno dall'API esterna: il metodo \texttt  {dto()}.}{8}{section*.20}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Il flusso di traversal: \texttt  {FsStatScannerImpl}.}{8}{section*.21}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Gestione degli errori a due livelli.}{9}{section*.22}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{La façade pubblica: \texttt  {index.ts}.}{9}{section*.23}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{CLI e misurazione delle prestazioni.}{9}{section*.24}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Design dell'implementazione RX}{9}{subsection.3.3}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Diagramma UML delle classi dell'implementazione con Event Loop (TypeScript).}}{10}{figure.2}\protected@file@percent }
-\newlabel{fig:uml-ts}{{2}{10}{Diagramma UML delle classi dell'implementazione con Event Loop (TypeScript)}{figure.2}{}}
-\gdef \@abspage@last{10}
+\@writefile{toc}{\contentsline {paragraph}{Il modello dati: \texttt  {FSReport}.}{6}{section*.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{La libreria: \texttt  {FSStatLib}.}{7}{section*.16}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Il flusso ricorsivo: \texttt  {processDirectory}.}{7}{section*.17}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Gestione degli errori.}{7}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Integrazione con la CLI.}{7}{section*.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Design dell'implementazione Event Loop}{8}{subsection.3.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Diagramma UML delle classi dell'implementazione con Event Loop (TypeScript).}}{9}{figure.2}\protected@file@percent }
+\newlabel{fig:uml-ts}{{2}{9}{Diagramma UML delle classi dell'implementazione con Event Loop (TypeScript)}{figure.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Struttura dei moduli.}{9}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Pattern di incapsulamento: factory function e interfaccia pubblica.}{10}{section*.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Il Branded Type \texttt  {Path}.}{10}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Separazione del modello interno dall'API esterna: il metodo \texttt  {dto()}.}{10}{section*.23}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Il flusso di traversal: \texttt  {FsStatScannerImpl}.}{10}{section*.24}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Gestione degli errori a due livelli.}{11}{section*.25}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{La façade pubblica: \texttt  {index.ts}.}{11}{section*.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{CLI e misurazione delle prestazioni.}{11}{section*.27}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Design dell'implementazione RX}{12}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Il modello dati: \texttt  {Report}.}{12}{section*.28}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Generazione dello stream: \texttt  {exploreDirectory}.}{12}{section*.29}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Parallelizzazione della classificazione: \texttt  {ParallelFlowable}.}{12}{section*.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Riduzione a due livelli.}{13}{section*.31}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Assenza di sincronizzazione esplicita.}{13}{section*.32}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Integrazione con la CLI: \texttt  {Main} e ponte verso il modello bloccante.}{13}{section*.33}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Gestione degli errori.}{14}{section*.34}\protected@file@percent }
+\gdef \@abspage@last{14}
