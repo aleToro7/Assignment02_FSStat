@@ -85,7 +85,7 @@ Un vincolo di progetto esplicito impone che le tre versioni siano sviluppate in 
 
 \subsection*{Requisito opzionale}
 
-Il progetto prevede un requisito opzionale [\textasteriskcentered], obbligatorio per il conseguimento della lode, che estende la libreria con funzionalità interattive:
+Il progetto prevede un requisito opzionale, che estende la libreria con funzionalità interattive:
 
 \begin{itemize}
     \item possibilità di \textbf{interrompere} la generazione del report in qualsiasi momento;
@@ -104,7 +104,7 @@ Questa caratteristica si adatta in modo naturale all'attraversamento ricorsivo d
 
 \paragraph{Struttura dell'implementazione.}
 
-Il punto di ingresso pubblico è il metodo \texttt{getFSReport()}, che restituisce una \texttt{CompletableFuture<FSReport>} per offrire un'interfaccia non bloccante al chiamante (CLI o GUI). Internamente, la computazione reale viene avviata tramite \texttt{CompletableFuture.supplyAsync()}, che esegue il corpo su un Virtual Thread. All'interno di questo contesto viene creato un \texttt{ExecutorService} dedicato tramite \texttt{Executors.newVirtualThreadPerTaskExecutor()}, racchiuso in un blocco \texttt{try-with-resources}:
+Il punto di ingresso pubblico è il metodo \texttt{getFSReport()}, che restituisce una \texttt{CompletableFuture<FSReport>} per offrire un'interfaccia non bloccante al chiamante (CLI o GUI). Internamente, la computazione reale viene incapsulata in una \texttt{CompletableFuture.supplyAsync()}. All'interno di questo contesto viene creato un \texttt{ExecutorService} dedicato tramite \texttt{Executors.newVirtualThreadPerTaskExecutor()}, racchiuso in un blocco \texttt{try-with-resources}:
 
 \begin{lstlisting}[language=Java]
 try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
