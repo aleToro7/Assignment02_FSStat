@@ -374,9 +374,17 @@ Il consumer può importare \texttt{getFSReport} direttamente come funzione, senz
 \paragraph{CLI e misurazione delle prestazioni.}
 
 Il modulo \texttt{main.ts} implementa la CLI: legge il path da \texttt{process.argv[2]} con fallback alla directory corrente (\texttt{process.cwd()}), configura i parametri (\texttt{maxSize = 100 MB}, \texttt{nb = 5}) tramite l'utility \texttt{FileSize.megabyte()}, e misura il tempo di esecuzione con \texttt{benchmark()}. Quest'ultima funzione, basata su \texttt{process.hrtime.bigint()} per precisione al nanosecondo, restituisce sia il risultato che la durata in millisecondi, che vengono poi stampati in formato JSON indentato tramite \texttt{JSON.stringify(report, null, 2)}.
+
 \subsection{Design dell'implementazione RX}
 
 L'implementazione reattiva è articolata, in analogia con la versione a Virtual Thread, in due classi principali del package \texttt{lib}: \texttt{Report}, che modella il risultato della computazione, e \texttt{FSStatLib}, che costruisce ed esegue la pipeline reattiva. La classe \texttt{Main} funge da consumer minimale, limitandosi a sottoscriversi al risultato prodotto dalla libreria.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\textwidth]{./immagini/UML_Rx.png}
+    \caption{Diagramma UML delle classi dell'implementazione con java RX.}
+    \label{fig:uml-rx}
+\end{figure}
 
 \paragraph{Il modello dati: \texttt{Report}.}
 
