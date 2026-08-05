@@ -8,7 +8,7 @@ public class FSReport {
     private final int[] distribution;
     private final long maxFS;
     private final int nb;
-    
+
     // ReentrantLock per evitare il "Thread Pinning" dei Virtual Threads
     private final ReentrantLock lock = new ReentrantLock();
 
@@ -25,7 +25,13 @@ public class FSReport {
         this.distribution = Arrays.copyOf(other.distribution, other.distribution.length);
     }
 
-    public void addFile(long size) {
+    /**
+     * Registra un file nel report. Restituisce il nuovo totale di file, calcolato
+     * atomicamente insieme all'incremento, cosi' il chiamante puo' decidere se
+     * notificare un aggiornamento senza dover rileggere lo stato condiviso
+     * separatamente (evitando la race tra incremento e lettura).
+     */
+    public int addFile(long size) {
         lock.lock();
         try {
             this.totalFiles++;
@@ -37,11 +43,13 @@ public class FSReport {
                 if (bandIndex == nb) bandIndex = nb - 1;
                 this.distribution[bandIndex]++;
             }
+            return this.totalFiles;
         } finally {
             lock.unlock();
         }
     }
 
+    /** Istantanea coerente e indipendente dello stato corrente del report. */
     public FSReport getSnapshot() {
         lock.lock();
         try {
@@ -51,8 +59,25 @@ public class FSReport {
         }
     }
 
-    public int getTotalFiles() { return totalFiles; }
-    public int[] getDistribution() { return distribution; }
+    public int getTotalFiles() {
+        lock.lock();
+        try {
+            return totalFiles;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /** Restituisce una copia difensiva: il chiamante non puo' mutare lo stato interno. */
+    public int[] getDistribution() {
+        lock.lock();
+        try {
+            return Arrays.copyOf(distribution, distribution.length);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public long getMaxFS() { return maxFS; }
     public int getNb() { return nb; }
 }

@@ -64,16 +64,26 @@ public class FSStatGUI extends JFrame {
         long startTime = System.currentTimeMillis();
 
         // lambda che aggiorna la GUI (usando invokeLater per non bloccare Swing)
-        lib.getFSReport(dir, maxFS, nb, 
+        lib.getFSReport(dir, maxFS, nb,
             report -> SwingUtilities.invokeLater(() -> updateDisplay(report, "IN ESECUZIONE...")),
             currentTaskController
         ).thenAccept(finalReport -> {
             long time = System.currentTimeMillis() - startTime;
+            String status = currentTaskController.isCancelled()
+                    ? "INTERROTTO dall'utente dopo " + time + " ms (report parziale)"
+                    : "COMPLETATO in " + time + " ms";
             SwingUtilities.invokeLater(() -> {
-                updateDisplay(finalReport, "COMPLETATO in " + time + " ms");
+                updateDisplay(finalReport, status);
                 btnStart.setEnabled(true);
                 btnStop.setEnabled(false);
             });
+        }).exceptionally(ex -> {
+            SwingUtilities.invokeLater(() -> {
+                consoleArea.append("\n\n[ERRORE] Analisi fallita: " + ex.getMessage() + "\n");
+                btnStart.setEnabled(true);
+                btnStop.setEnabled(false);
+            });
+            return null;
         });
     }
 
