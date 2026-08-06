@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="FSStatLibTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-05-01T19:08:01.212Z" hostname="DESKTOP-7Q2NN0B" time="0.049">
-  <properties/>
-  <testcase name="testGetFSReportCartellaInesistente()" classname="FSStatLibTest" time="0.023"/>
-  <testcase name="testGetFSReportSuccesso()" classname="FSStatLibTest" time="0.025"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

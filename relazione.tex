@@ -104,50 +104,58 @@ Questa caratteristica si adatta in modo naturale all'attraversamento ricorsivo d
 
 \paragraph{Struttura dell'implementazione.}
 
-Il punto di ingresso pubblico è il metodo \texttt{getFSReport()}, che restituisce una \texttt{CompletableFuture<FSReport>} per offrire un'interfaccia non bloccante al chiamante (CLI o GUI). Internamente, la computazione reale viene incapsulata in una \texttt{CompletableFuture.supplyAsync()}. All'interno di questo contesto viene creato un \texttt{ExecutorService} dedicato tramite \texttt{Executors.newVirtualThreadPerTaskExecutor()}, racchiuso in un blocco \texttt{try-with-resources}:
+Il punto di ingresso pubblico è il metodo \texttt{getFSReport()}, che restituisce una \texttt{CompletableFuture<FSReport>} per offrire un'interfaccia non bloccante al chiamante (la GUI). Internamente, la computazione reale viene incapsulata in una \texttt{CompletableFuture.supplyAsync()}. Prima di avviare la scansione viene istanziato un unico \texttt{FSReport} \textit{condiviso} tra tutti i Virtual Thread, e viene creato un \texttt{ExecutorService} dedicato tramite \texttt{Executors.newVirtualThreadPerTaskExecutor()}, racchiuso in un blocco \texttt{try-with-resources}:
 
 \begin{lstlisting}[language=Java]
 try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
     Path rootPath = Paths.get(directoryPath);
-    return processDirectory(rootPath, maxFS, nb, executor).get();
+    processDirectory(rootPath, executor, sharedReport, onUpdate, controller).get();
+    return sharedReport.getSnapshot();
 }
 \end{lstlisting}
 
-La chiusura automatica dell'executor al termine del blocco \texttt{try} ha una semantica cruciale: 
-\texttt{ExecutorService.close()}, (che viene invocato automaticamente nel blocco \texttt{try-with-resources}) invoca \texttt{shutdown()} seguito da \texttt{awaitTermination()}, 
+La chiusura automatica dell'executor al termine del blocco \texttt{try} ha una semantica cruciale:
+\texttt{ExecutorService.close()}, (che viene invocato automaticamente nel blocco \texttt{try-with-resources}) invoca \texttt{shutdown()} seguito da \texttt{awaitTermination()},
 garantendo che nessun task figlio venga abbandonato prima che il risultato finale sia disponibile.
  Questo meccanismo funge da \textit{barriera di sincronizzazione} implicita su tutto l'albero dei task.
 
-\paragraph{Ricorsione concorrente e Map-Reduce.}
+\paragraph{Ricorsione concorrente su stato condiviso.}
 
-Il metodo \texttt{processDirectory()} incarna il pattern \textit{divide et impera}: per ogni nodo dell'albero viene sottomesso all'executor un nuovo task (e quindi un nuovo Virtual Thread). All'interno del task, si itera sul contenuto della directory tramite \texttt{Files.newDirectoryStream()}:
+Il metodo \texttt{processDirectory()} incarna il pattern \textit{divide et impera}: per ogni nodo dell'albero viene sottomesso all'executor un nuovo task (e quindi un nuovo Virtual Thread), a cui vengono passati per riferimento lo stesso \texttt{ExecutorService} e lo stesso \texttt{FSReport} \textit{condiviso} tra tutti i task, anziché un report locale al singolo thread. All'interno del task, si itera sul contenuto della directory tramite \texttt{Files.newDirectoryStream()}:
 
 \begin{itemize}
-    \item Per ogni \textbf{file regolare}: si invoca \texttt{Files.size()} (operazione I/O bloccante) e si aggiorna un oggetto \texttt{FSReport} \textit{locale} al Virtual Thread corrente.
-    \item Per ogni \textbf{sottodirectory}: si sottomette ricorsivamente un nuovo task all'executor, raccogliendo il \texttt{Future<FSReport>} restituito in una lista di \textit{subTask}.
+    \item Per ogni \textbf{file regolare}: si invoca \texttt{Files.size()} (operazione I/O bloccante) e si registra il file direttamente sul \texttt{FSReport} condiviso tramite \texttt{addFile()}, un'operazione atomica protetta internamente da un lock.
+    \item Per ogni \textbf{sottodirectory}: si sottomette ricorsivamente un nuovo task all'executor, raccogliendo il \texttt{Future<Void>} restituito in una lista di \textit{subTask}.
 \end{itemize}
 
-Terminata la scansione della directory corrente, il Virtual Thread chiama \texttt{task.get()} su ciascun subTask per attenderne il completamento e fondere i risultati parziali nel report locale tramite il metodo \texttt{FSReport.merge()}:
+Terminata la scansione della directory corrente, il Virtual Thread chiama \texttt{task.get()} su ciascun subTask per attenderne il completamento; non essendo più necessaria alcuna fusione di risultati (il report è già aggiornato in modo condiviso da tutti i task), questa fase svolge esclusivamente il ruolo di \textit{join} strutturale, propagando verso l'alto sia il completamento sia — se richiesta — la cancellazione:
 
 \begin{lstlisting}[language=Java]
-for (Future<FSReport> task : subTasks) {
-    localReport.merge(task.get());
+for (Future<Void> task : subTasks) {
+    if (controller.isCancelled()) {
+        task.cancel(true);
+    } else {
+        task.get();
+    }
 }
 \end{lstlisting}
 
-Questa fase di riduzione segue un pattern \textit{Map-Reduce}: la fase di \textit{map} distribuisce il lavoro di scansione su Virtual Thread indipendenti, mentre la fase di \textit{reduce} aggrega i report parziali bottom-up lungo l'albero, propagando i risultati verso il nodo radice.
+La struttura risultante rimane un albero di Virtual Thread isomorfo all'albero delle directory: la fase di \textit{map} distribuisce il lavoro di scansione su Virtual Thread indipendenti, ma a differenza di un classico pattern Map-Reduce non esiste più una fase di \textit{reduce} esplicita, poiché ogni task scrive direttamente sull'unico stato condiviso.
 
-\paragraph{Assenza di contesa e gestione dell'I/O bloccante.}
+\paragraph{Sincronizzazione dello stato condiviso: \texttt{ReentrantLock} e Thread Pinning.}
 
-Una proprietà rilevante di questo design è la completa assenza di stato condiviso mutabile tra Virtual Thread concorrenti: ogni task opera esclusivamente 
-sul proprio \texttt{FSReport} locale. La fusione dei risultati (\texttt{merge}) avviene sempre in modo sequenziale nel Virtual Thread padre, dopo che i 
-figli sono terminati. Ne consegue che non è necessario alcun meccanismo di sincronizzazione esplicito (né \texttt{synchronized} né \texttt{ReentrantLock}) per proteggere il report.
+Poiché tutti i Virtual Thread accedono concorrentemente allo stesso \texttt{FSReport}, l'incremento del contatore e dell'array \texttt{distribution} in \texttt{addFile()} costituisce una sezione critica e richiede sincronizzazione esplicita. La scelta è ricaduta su un \texttt{java.util.concurrent.locks.ReentrantLock} piuttosto che su un blocco \texttt{synchronized}: quest'ultimo, se acquisito da un Virtual Thread che si blocca al suo interno (ad esempio in attesa di un altro lock), può causare il fenomeno del \textit{Thread Pinning}, per cui il Virtual Thread rimane ``fissato'' al proprio carrier thread invece di poter effettuare l'unmount, vanificando il vantaggio dei Virtual Thread in presenza di elevata contesa. Il \texttt{ReentrantLock}, gestito interamente a livello di libreria concorrente e non tramite bytecode di monitor, non soffre di questa limitazione e consente comunque l'unmount del Virtual Thread in attesa del lock.
 
-Quando un Virtual Thread si blocca su un'operazione di I/O — ad esempio \texttt{Files.size()} o \texttt{task.get()} in attesa di un risultato non ancora 
+\paragraph{Cancellazione cooperativa e aggiornamenti incrementali.}
+
+A supporto del requisito opzionale di interruzione e monitoraggio in tempo reale, \texttt{getFSReport()} accetta due parametri aggiuntivi opzionali: un \texttt{Consumer<FSReport>} \texttt{onUpdate} e un oggetto \texttt{TaskController}, che espone un flag \texttt{volatile} interrogabile tramite \texttt{isCancelled()} e impostabile tramite \texttt{cancel()}. Ogni task verifica tale flag prima di iniziare la scansione di una directory e a ogni iterazione al suo interno, interrompendo tempestivamente l'esplorazione dei rami non ancora visitati senza dover implementare un vero e proprio meccanismo di interrupt sui thread. Ogni \texttt{NOTIFY\_EVERY\_N\_FILES} file processati viene inoltre notificata al chiamante una \textit{snapshot} immutabile e coerente del report parziale tramite \texttt{onUpdate.accept()}, permettendo l'aggiornamento in tempo reale dell'interfaccia utente senza esporre lo stato mutabile interno. La versione ``semplice'' del metodo, richiesta come requisito base, delega semplicemente a questa versione completa passando \texttt{onUpdate = null} e un \texttt{TaskController} locale non condiviso col chiamante.
+
+Quando un Virtual Thread si blocca su un'operazione di I/O — ad esempio \texttt{Files.size()} — sull'acquisizione del \texttt{ReentrantLock}, oppure su \texttt{task.get()} in attesa di un risultato non ancora
 disponibile — la JVM effettua automaticamente l'\textit{unmount} del Virtual Thread dal \textit{carrier thread} (il platform thread sottostante), che viene immediatamente liberato
- per eseguire un altro Virtual Thread pronto. 
- Questo meccanismo permette al ridotto pool di carrier thread (tipicamente uguale al numero di core fisici) di servire migliaia di Virtual Thread concorrenti, eliminando il costo del 
+ per eseguire un altro Virtual Thread pronto.
+ Questo meccanismo permette al ridotto pool di carrier thread (tipicamente uguale al numero di core fisici) di servire migliaia di Virtual Thread concorrenti, eliminando il costo del
  context switch a livello di sistema operativo.
+
 
 \subsection{Approccio Asincrono basato su Event Loop}
 
@@ -203,72 +211,98 @@ Un ulteriore vantaggio del modello reattivo, rilevante per il requisito opzional
 
 \subsection{Design dell'implementazione Virtual Threads}
 
-L'implementazione con Virtual Threads è articolata in due classi principali nel package \texttt{it.unibo.fsstat.lib}: \texttt{FSReport}, che modella il risultato della computazione, e \texttt{FSStatLib}, che ne orchestra l'esecuzione concorrente. La CLI (\texttt{Main}) interagisce esclusivamente con l'interfaccia pubblica di \texttt{FSStatLib}, rimanendo ignara del paradigma di concorrenza sottostante.
+L'implementazione con Virtual Threads è articolata in due classi principali nel package \texttt{it.unibo.fsstat.lib}: \texttt{FSReport}, che modella e protegge lo stato condiviso della computazione, e \texttt{FSStatLib}, che ne orchestra l'esecuzione concorrente. La GUI (\texttt{FSStatGUI}, nel package \texttt{it.unibo.fsstat.gui}) interagisce esclusivamente con l'interfaccia pubblica di \texttt{FSStatLib}, rimanendo ignara del paradigma di concorrenza sottostante.
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.75\textwidth]{./immagini/Virtual_thread_architecture.png}
+    \includegraphics[width=1.15\textwidth, height=0.2\textheight]{./immagini/Virtual_thread_architecture.png}
     \caption{Diagramma UML delle classi dell'implementazione con Virtual Threads.}
     \label{fig:uml-vt}
 \end{figure}
 
 \paragraph{Il modello dati: \texttt{FSReport}.}
 
-\texttt{FSReport} è un \textit{value object} che incapsula tre informazioni: il conteggio totale dei file (\texttt{totalFiles}), i parametri di classificazione (\texttt{maxFS} e \texttt{nb}), e un array \texttt{distribution} di dimensione \texttt{nb + 1}. Le prime \texttt{nb} celle corrispondono alle bande di dimensione nell'intervallo \texttt{[0, maxFS]}, mentre la cella di indice \texttt{nb} raccoglie i file che superano \texttt{maxFS}.
+\texttt{FSReport} incapsula tre informazioni: il conteggio totale dei file (\texttt{totalFiles}), i parametri di classificazione (\texttt{maxFS} e \texttt{nb}), e un array \texttt{distribution} di dimensione \texttt{nb + 1}. Le prime \texttt{nb} celle corrispondono alle bande di dimensione nell'intervallo \texttt{[0, maxFS]}, mentre la cella di indice \texttt{nb} raccoglie i file che superano \texttt{maxFS}. A differenza di un semplice \textit{value object} immutabile, in questa implementazione \texttt{FSReport} è anche l'oggetto di stato \textit{condiviso} tra tutti i Virtual Thread della scansione, e incapsula quindi al proprio interno anche la sincronizzazione necessaria a proteggerlo, tramite un \texttt{ReentrantLock} privato.
 
-La classificazione di un singolo file avviene nel metodo \texttt{addFile(long size)}, che calcola l'indice di banda tramite divisione intera:
+La classificazione di un singolo file avviene nel metodo \texttt{addFile(long size)}, che aggiorna contatore e array sotto lock e calcola l'indice di banda tramite divisione intera, restituendo atomicamente il nuovo totale di file:
 
 \begin{lstlisting}[language=Java]
-double step = (double) maxFS / nb;
-int bandIndex = (int) (size / step);
-if (bandIndex == nb) bandIndex = nb - 1; // Caso limite: size == maxFS
+public int addFile(long size) {
+    lock.lock();
+    try {
+        this.totalFiles++;
+        double step = (double) maxFS / nb;
+        int bandIndex = (int) (size / step);
+        if (bandIndex == nb) bandIndex = nb - 1; // Caso limite: size == maxFS
+        this.distribution[bandIndex]++;
+        return this.totalFiles;
+    } finally {
+        lock.unlock();
+    }
+}
 \end{lstlisting}
 
-Il metodo \texttt{merge(FSReport other)} somma componente per componente i due array \texttt{distribution} e accumula i conteggi di \texttt{totalFiles}. Questa operazione è la chiave del pattern Map-Reduce: è associativa e non richiede alcuna sincronizzazione perché viene sempre invocata in modo sequenziale dal Virtual Thread padre dopo che i figli sono terminati.
+Il valore di ritorno evita al chiamante di dover rileggere separatamente il contatore dopo l'incremento, eliminando una possibile race condition tra scrittura e lettura. Non esiste più un metodo \texttt{merge()}: la fusione dei contributi dei vari Virtual Thread non è necessaria, poiché tutti scrivono direttamente sullo stesso oggetto. L'accesso in sola lettura al report è invece mediato da \texttt{getSnapshot()}, che restituisce, sempre sotto lock, una copia indipendente e coerente dello stato corrente (costruita tramite un costruttore privato di copia), usata sia come valore di ritorno finale sia per gli aggiornamenti incrementali verso la GUI.
 
 \paragraph{La libreria: \texttt{FSStatLib}.}
 
-L'interfaccia pubblica espone un unico metodo:
+L'interfaccia pubblica espone due sovraccarichi:
 
 \begin{lstlisting}[language=Java]
 public CompletableFuture<FSReport> getFSReport(
         String directoryPath, long maxFS, int nb)
+
+public CompletableFuture<FSReport> getFSReport(
+        String directoryPath, long maxFS, int nb,
+        Consumer<FSReport> onUpdate, TaskController controller)
 \end{lstlisting}
 
-La restituzione di una \texttt{CompletableFuture} disaccoppia il chiamante dalla concorrenza interna: la CLI può concatenare callback (\texttt{thenAccept}) oppure attendere sincronamente con \texttt{join()}, senza dover conoscere né i Virtual Thread né l'executor sottostante.
+Il primo, richiesto dal requisito base della consegna, delega semplicemente al secondo passando \texttt{onUpdate = null} e un \texttt{TaskController} locale, non condiviso col chiamante e quindi mai cancellabile dall'esterno. Il secondo sovraccarico è invece quello che supporta il requisito opzionale di interruzione e monitoraggio incrementale, tramite un \texttt{Consumer<FSReport>} per la notifica dello stato parziale e un \texttt{TaskController} — un oggetto con un flag \texttt{volatile} \texttt{cancelled}, interrogabile con \texttt{isCancelled()} e impostabile con \texttt{cancel()} — condivisibile con il chiamante (nella GUI, ad esempio, per implementare il pulsante ``Stop''). La restituzione di una \texttt{CompletableFuture} disaccoppia comunque il chiamante dalla concorrenza interna: si possono concatenare callback (\texttt{thenAccept}, \texttt{exceptionally}) senza dover conoscere né i Virtual Thread né l'executor sottostante.
 
-Internamente, la computazione viene incapsulata in una CompletableFuture.supplyAsync(). All'interno di questo contesto asincrono viene creato un ExecutorService dedicato ai Virtual Threads tramite Executors.newVirtualThreadPerTaskExecutor():
+Internamente, la computazione viene incapsulata in una \texttt{CompletableFuture.supplyAsync()}. Prima di sottomettere il primo task viene istanziato l'unico \texttt{FSReport} \textit{condiviso} (\texttt{sharedReport}), che verrà passato per riferimento a ogni Virtual Thread della scansione. All'interno del contesto asincrono viene inoltre creato un \texttt{ExecutorService} dedicato ai Virtual Threads tramite \texttt{Executors.newVirtualThreadPerTaskExecutor()}:
 
 \begin{lstlisting}[language=Java]
-try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-    Path rootPath = Paths.get(directoryPath);
-    return processDirectory(rootPath, maxFS, nb, executor).get();
-}
+FSReport sharedReport = new FSReport(maxFS, nb);
+
+return CompletableFuture.supplyAsync(() -> {
+    try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+        Path rootPath = Paths.get(directoryPath);
+        processDirectory(rootPath, executor, sharedReport, onUpdate, controller).get();
+        return sharedReport.getSnapshot();
+    } catch (Exception e) {
+        throw new CompletionException(e);
+    }
+});
 \end{lstlisting}
 
-Il blocco \texttt{try-with-resources} ha una funzione di lifecycle management precisa: alla sua uscita, \texttt{ExecutorService.close()} invoca \texttt{shutdown()} e \texttt{awaitTermination()}, assicurando che tutti i Virtual Thread lanciati ricorsivamente abbiano completato la propria esecuzione prima che il risultato venga restituito alla \texttt{CompletableFuture}.
+Il blocco \texttt{try-with-resources} ha una funzione di lifecycle management precisa: alla sua uscita, \texttt{ExecutorService.close()} invoca \texttt{shutdown()} e \texttt{awaitTermination()}, assicurando che tutti i Virtual Thread lanciati ricorsivamente abbiano completato (o siano stati cancellati) la propria esecuzione prima che il risultato — una \textit{snapshot} immutabile del report condiviso — venga restituito alla \texttt{CompletableFuture}.
 
 \paragraph{Il flusso ricorsivo: \texttt{processDirectory}.}
 
-\texttt{processDirectory} è il cuore dell'algoritmo. Ogni sua invocazione sottomette all'executor un nuovo task — e quindi un nuovo Virtual Thread — incaricato di elaborare una singola directory. Il flusso interno al task segue tre fasi:
+\texttt{processDirectory} è il cuore dell'algoritmo. Ogni sua invocazione sottomette all'executor un nuovo task — e quindi un nuovo Virtual Thread — incaricato di elaborare una singola directory, e restituisce un \texttt{Future<Void>} (non più \texttt{Future<FSReport>}: non c'è più nulla da restituire e fondere, dato che il risultato viene scritto direttamente sul report condiviso). Il flusso interno al task segue tre fasi:
 
 \begin{enumerate}
-    \item \textbf{Scansione locale}: si itera sul contenuto della directory tramite \texttt{Files.newDirectoryStream()}. Per ogni file regolare, \texttt{Files.size()} legge la dimensione dal disco (operazione I/O bloccante) e la classifica nel \texttt{FSReport} locale al thread. Per ogni sottodirectory, si invoca ricorsivamente \texttt{processDirectory}, raccogliendo il \texttt{Future<FSReport>} restituito in una lista (\texttt{subTasks}).
+    \item \textbf{Controllo di cancellazione e scansione}: all'ingresso del task viene verificato \texttt{controller.isCancelled()}; in caso positivo il task termina immediatamente. Si itera quindi sul contenuto della directory tramite \texttt{Files.newDirectoryStream()}, verificando la cancellazione anche a ogni iterazione. Per ogni file regolare, \texttt{Files.size()} legge la dimensione dal disco (operazione I/O bloccante) e la registra sul report condiviso tramite \texttt{sharedReport.addFile(...)}; se è stato fornito un \texttt{onUpdate} e il nuovo totale è multiplo di \texttt{NOTIFY\_EVERY\_N\_FILES}, viene notificata una snapshot del report parziale. Per ogni sottodirectory, si invoca ricorsivamente \texttt{processDirectory}, raccogliendo il \texttt{Future<Void>} restituito in una lista (\texttt{subTasks}).
 
-    \item \textbf{Riduzione (join)}: terminata la scansione, il Virtual Thread chiama \texttt{task.get()} su ciascun elemento di \texttt{subTasks}. Se il task figlio non è ancora completato, il Virtual Thread si sospende — effettuando l'\textit{unmount} dal carrier thread — e si risveglia non appena il risultato è disponibile. I report parziali vengono fusi nel report locale tramite \texttt{merge()}.
+    \item \textbf{Join e propagazione della cancellazione}: terminata la scansione, il Virtual Thread itera su \texttt{subTasks}. Se la cancellazione è stata richiesta nel frattempo, i task figli non ancora completati vengono cancellati con \texttt{task.cancel(true)}; altrimenti si chiama \texttt{task.get()}, che sospende il Virtual Thread — effettuando l'\textit{unmount} dal carrier thread — fino al completamento del figlio. \texttt{CancellationException} e \texttt{InterruptedException} vengono ignorate silenziosamente (interruzione volontaria), mentre eventuali \texttt{ExecutionException} vengono loggate su \texttt{stderr} senza interrompere la join delle altre sottodirectory.
 
-    \item \textbf{Restituzione}: il report locale, ora completo di tutti i contributi dei sottoalberi, viene restituito come valore del \texttt{Callable} sottomesso all'executor.
+    \item \textbf{Terminazione}: il task completa il proprio \texttt{Future<Void>} restituendo \texttt{null}, segnalando al padre di aver terminato la propria porzione di albero, senza alcun valore da propagare.
 \end{enumerate}
 
-La struttura risultante è un albero di Virtual Thread isomorfo all'albero delle directory: ogni nodo dell'albero FS corrisponde a un task concorrente, e la riduzione avviene bottom-up per propagazione dei \texttt{Future}.
+La struttura risultante è comunque un albero di Virtual Thread isomorfo all'albero delle directory: ogni nodo dell'albero FS corrisponde a un task concorrente, ma a differenza della fase di riduzione di un classico Map-Reduce, ciò che si propaga bottom-up non è più un valore aggregato bensì il solo segnale di completamento (o di cancellazione).
+
+\paragraph{Sincronizzazione e Thread Pinning.}
+
+Tutti i Virtual Thread scrivono concorrentemente sullo stesso \texttt{sharedReport}: \texttt{addFile()} è quindi una sezione critica, protetta da un \texttt{ReentrantLock} interno a \texttt{FSReport} anziché da un blocco \texttt{synchronized}. La scelta non è stilistica: se un Virtual Thread si blocca all'interno di un monitor \texttt{synchronized}, non può effettuare l'unmount dal proprio carrier thread (\textit{Thread Pinning}), degradando lo scheduling quando molti Virtual Thread contendono la stessa risorsa. Il \texttt{ReentrantLock}, appartenendo alle API \texttt{java.util.concurrent} e non al meccanismo dei monitor a livello di bytecode, consente invece l'unmount anche mentre un Virtual Thread è in attesa del lock, preservando il vantaggio del modello \textit{Thread-per-task} anche in presenza di stato condiviso.
 
 \paragraph{Gestione degli errori.}
 
-Gli errori di accesso al file system (directory protette, symlink non risolvibili) vengono catturati localmente da un blocco \texttt{catch (IOException e)} all'interno di ciascun task: la directory inaccessibile viene saltata con un messaggio su \texttt{stderr}, mentre la computazione prosegue sui nodi raggiungibili. Eventuali eccezioni non gestite che sfuggono al task vengono incapsulate in una \texttt{CompletionException} e propagate al chiamante tramite la \texttt{CompletableFuture}, che entra nello stato \textit{exceptionally completed} e può essere intercettata con \texttt{.exceptionally()}.
+Gli errori di accesso al file system (directory protette, symlink non risolvibili) vengono catturati localmente da un blocco \texttt{catch (IOException e)} all'interno di ciascun task: la directory inaccessibile viene saltata con un messaggio su \texttt{stderr}, mentre la computazione prosegue sui nodi raggiungibili. Eventuali eccezioni non gestite che sfuggono al task radice vengono incapsulate in una \texttt{CompletionException} e propagate al chiamante tramite la \texttt{CompletableFuture}, che entra nello stato \textit{exceptionally completed} e può essere intercettata con \texttt{.exceptionally()}.
 
-\paragraph{Integrazione con la CLI.}
+\paragraph{Integrazione con la GUI: \texttt{FSStatGUI}.}
 
-In \texttt{Main}, il chiamante configura i tre parametri della scansione (\texttt{directoryPath}, \texttt{maxFS}, \texttt{nb}) e concatena alla \texttt{CompletableFuture} una callback \texttt{thenAccept} per la stampa del report. La chiamata \texttt{.join()} finale blocca il thread principale fino al completamento, evitando che il programma termini prima che la computazione asincrona sia conclusa. La formattazione del report calcola le etichette delle bande moltiplicando l'indice per \texttt{bandSize = maxFS / nb}, producendo intervalli del tipo \texttt{[i·bandSize, (i+1)·bandSize]}.
+\texttt{FSStatGUI} è una GUI Swing minimale che espone un campo di testo per il percorso da analizzare, due pulsanti (\texttt{Start}/\texttt{Stop}) e un'area di testo per la visualizzazione del report. Alla pressione di \texttt{Start} viene creato un nuovo \texttt{TaskController} e invocato \texttt{getFSReport()}, passando come \texttt{onUpdate} una lambda che aggiorna l'area di testo tramite \texttt{SwingUtilities.invokeLater(...)} — necessario perché le notifiche arrivano da un Virtual Thread e Swing richiede che ogni modifica alla UI avvenga sull'\textit{Event Dispatch Thread}. Alla \texttt{CompletableFuture} restituita vengono concatenati un \texttt{thenAccept} (che mostra il report finale, distinguendo lo stato ``COMPLETATO'' da ``INTERROTTO dall'utente'' in base a \texttt{controller.isCancelled()}) e un \texttt{exceptionally} per la gestione degli errori. Alla pressione di \texttt{Stop}, \texttt{stopAnalysis()} si limita a invocare \texttt{currentTaskController.cancel()}, innescando la cancellazione cooperativa descritta in precedenza.
+
 \subsection{Design dell'implementazione Event Loop}
 
 L'implementazione con Event Loop è sviluppata in \textbf{TypeScript} sul runtime \textbf{Node.js}, ed è organizzata in moduli con responsabilità ben separate. A differenza della versione Java con Virtual Threads, l'intera concorrenza è ottenuta senza istanziare alcun thread esplicitamente: il parallelismo emerge dalla composizione di \texttt{Promise} gestite dall'event loop di Node.js e dal thread pool di \textit{libuv}.
